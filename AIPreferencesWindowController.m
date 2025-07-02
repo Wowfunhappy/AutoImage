@@ -8,7 +8,7 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
 @implementation AIPreferencesWindowController
 
 - (id)init {
-    NSRect windowRect = NSMakeRect(0, 0, 500, 150);
+    NSRect windowRect = NSMakeRect(0, 0, 550, 150);
     NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                    styleMask:(NSTitledWindowMask |
                                                             NSClosableWindowMask)
@@ -29,12 +29,19 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     NSView *contentView = [[self window] contentView];
     
     CGFloat margin = 20;
-    CGFloat labelWidth = 90;
+    CGFloat labelWidth = 80;
     CGFloat windowWidth = NSWidth([contentView bounds]);
-    CGFloat currentY = NSHeight([contentView bounds]) - margin - 25;
+    CGFloat windowHeight = NSHeight([contentView bounds]);
     
-    // API Key
-    NSTextField *apiKeyLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
+    // Calculate positions for centered layout
+    CGFloat buttonHeight = 32;
+    CGFloat fieldSpacing = 35;
+    
+    // API Key field - positioned at center
+    CGFloat centerY = windowHeight / 2;
+    CGFloat apiKeyY = centerY + 15; // Slightly above center
+    
+    NSTextField *apiKeyLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, apiKeyY, labelWidth, 20)];
     [apiKeyLabel setStringValue:@"API Key:"];
     [apiKeyLabel setBordered:NO];
     [apiKeyLabel setEditable:NO];
@@ -42,14 +49,14 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [apiKeyLabel setAlignment:NSRightTextAlignment];
     [contentView addSubview:apiKeyLabel];
     
-    self.apiKeyTextField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, currentY - 2, windowWidth - margin - labelWidth - 10 - margin, 22)];
+    self.apiKeyTextField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, apiKeyY - 2, windowWidth - margin - labelWidth - 10 - margin, 22)];
     [[self.apiKeyTextField cell] setPlaceholderString:@"sk-..."];
     [[self.apiKeyTextField cell] setUsesSingleLineMode:YES];
     [contentView addSubview:self.apiKeyTextField];
     
-    // Moderation level
-    currentY -= 35;
-    NSTextField *moderationLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
+    // Moderation level - below API key
+    CGFloat moderationY = apiKeyY - fieldSpacing;
+    NSTextField *moderationLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, moderationY, labelWidth, 20)];
     [moderationLabel setStringValue:@"Moderation:"];
     [moderationLabel setBordered:NO];
     [moderationLabel setEditable:NO];
@@ -57,13 +64,13 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [moderationLabel setAlignment:NSRightTextAlignment];
     [contentView addSubview:moderationLabel];
     
-    self.moderationPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, currentY - 2, 150, 25)];
+    self.moderationPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, moderationY - 2, 150, 25)];
     [self.moderationPopUpButton addItemsWithTitles:@[@"Normal", @"Low"]];
     [contentView addSubview:self.moderationPopUpButton];
     
-    // Save button
-    currentY -= 40;
-    NSButton *saveButton = [[NSButton alloc] initWithFrame:NSMakeRect(NSWidth([contentView bounds]) - margin - 80, currentY, 80, 32)];
+    // Buttons at bottom
+    CGFloat buttonY = margin;
+    NSButton *saveButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 80, buttonY, 80, buttonHeight)];
     [saveButton setTitle:@"Save"];
     [saveButton setBezelStyle:NSRoundedBezelStyle];
     [saveButton setTarget:self];
@@ -71,7 +78,7 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [saveButton setKeyEquivalent:@"\r"];
     [contentView addSubview:saveButton];
     
-    NSButton *cancelButton = [[NSButton alloc] initWithFrame:NSMakeRect(NSWidth([contentView bounds]) - margin - 170, currentY, 80, 32)];
+    NSButton *cancelButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 170, buttonY, 80, buttonHeight)];
     [cancelButton setTitle:@"Cancel"];
     [cancelButton setBezelStyle:NSRoundedBezelStyle];
     [cancelButton setTarget:self];
