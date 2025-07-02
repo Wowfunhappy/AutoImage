@@ -12,11 +12,16 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 @implementation AIDragDropView
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
-    return [[self window].windowController draggingEntered:sender];
+    // Open the drawer when dragging over main window
+    AIMainWindowController *controller = (AIMainWindowController *)[self window].windowController;
+    if ([controller.optionsDrawer state] != NSDrawerOpenState && [controller.optionsDrawer state] != NSDrawerOpeningState) {
+        [controller.optionsDrawer open];
+    }
+    return NSDragOperationNone; // Main window doesn't accept drops
 }
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
-    return [[self window].windowController performDragOperation:sender];
+    return NO; // Main window doesn't accept drops
 }
 
 @end
@@ -27,11 +32,59 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 @implementation AIDragDropImageView
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
-    return [[self window].windowController draggingEntered:sender];
+    NSPasteboard *pboard = [sender draggingPasteboard];
+    
+    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]]) {
+        NSArray *files = [pboard propertyListForType:NSFilenamesPboardType];
+        for (NSString *file in files) {
+            NSString *extension = [[file pathExtension] lowercaseString];
+            if ([@[@"jpg", @"jpeg", @"png", @"gif", @"bmp"] containsObject:extension]) {
+                return NSDragOperationCopy;
+            }
+        }
+    } else if ([pboard availableTypeFromArray:@[NSTIFFPboardType, NSPasteboardTypePNG]]) {
+        return NSDragOperationCopy;
+    }
+    
+    return NSDragOperationNone;
 }
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
-    return [[self window].windowController performDragOperation:sender];
+    // Get the main window controller from the app delegate
+    id appDelegate = [NSApp delegate];
+    AIMainWindowController *controller = [appDelegate valueForKey:@"mainWindowController"];
+    
+    NSPasteboard *pboard = [sender draggingPasteboard];
+    
+    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]]) {
+        NSArray *files = [pboard propertyListForType:NSFilenamesPboardType];
+        for (NSString *file in files) {
+            NSString *extension = [[file pathExtension] lowercaseString];
+            if ([@[@"jpg", @"jpeg", @"png", @"gif", @"bmp"] containsObject:extension]) {
+                NSImage *image = [[NSImage alloc] initWithContentsOfFile:file];
+                if (image) {
+                    [controller attachImageFromSource:image];
+                    return YES;
+                }
+            }
+        }
+    } else if ([pboard availableTypeFromArray:@[NSTIFFPboardType]]) {
+        NSData *imageData = [pboard dataForType:NSTIFFPboardType];
+        NSImage *image = [[NSImage alloc] initWithData:imageData];
+        if (image) {
+            [controller attachImageFromSource:image];
+            return YES;
+        }
+    } else if ([pboard availableTypeFromArray:@[NSPasteboardTypePNG]]) {
+        NSData *imageData = [pboard dataForType:NSPasteboardTypePNG];
+        NSImage *image = [[NSImage alloc] initWithData:imageData];
+        if (image) {
+            [controller attachImageFromSource:image];
+            return YES;
+        }
+    }
+    
+    return NO;
 }
 
 @end
@@ -80,7 +133,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         
         self.imageGenerator = [[AIImageGenerationManager alloc] init];
         
-        // Register for drag and drop
+        // Register for drag and drop (only to detect drag enter for drawer opening)
         [contentView registerForDraggedTypes:@[NSFilenamesPboardType, NSTIFFPboardType, NSPasteboardTypePNG]];
         
         // Register for app termination notification
@@ -627,60 +680,6 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     return NO;
 }
 
-#pragma mark - Drag and Drop
-
-- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
-    NSPasteboard *pboard = [sender draggingPasteboard];
-    
-    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]]) {
-        NSArray *files = [pboard propertyListForType:NSFilenamesPboardType];
-        for (NSString *file in files) {
-            NSString *extension = [[file pathExtension] lowercaseString];
-            if ([@[@"jpg", @"jpeg", @"png", @"gif", @"bmp"] containsObject:extension]) {
-                return NSDragOperationCopy;
-            }
-        }
-    } else if ([pboard availableTypeFromArray:@[NSTIFFPboardType, NSPasteboardTypePNG]]) {
-        return NSDragOperationCopy;
-    }
-    
-    return NSDragOperationNone;
-}
-
-- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
-    NSPasteboard *pboard = [sender draggingPasteboard];
-    
-    if ([pboard availableTypeFromArray:@[NSFilenamesPboardType]]) {
-        NSArray *files = [pboard propertyListForType:NSFilenamesPboardType];
-        for (NSString *file in files) {
-            NSString *extension = [[file pathExtension] lowercaseString];
-            if ([@[@"jpg", @"jpeg", @"png", @"gif", @"bmp"] containsObject:extension]) {
-                NSImage *image = [[NSImage alloc] initWithContentsOfFile:file];
-                if (image) {
-                    [self attachImageFromSource:image];
-                    return YES;
-                }
-            }
-        }
-    } else if ([pboard availableTypeFromArray:@[NSTIFFPboardType]]) {
-        NSData *imageData = [pboard dataForType:NSTIFFPboardType];
-        NSImage *image = [[NSImage alloc] initWithData:imageData];
-        if (image) {
-            [self attachImageFromSource:image];
-            return YES;
-        }
-    } else if ([pboard availableTypeFromArray:@[NSPasteboardTypePNG]]) {
-        NSData *imageData = [pboard dataForType:NSPasteboardTypePNG];
-        NSImage *image = [[NSImage alloc] initWithData:imageData];
-        if (image) {
-            [self attachImageFromSource:image];
-            return YES;
-        }
-    }
-    
-    return NO;
-}
-
 #pragma mark - Paste Support
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
@@ -714,6 +713,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.attachedImageView setImage:self.attachedImage];
     [self.attachImageButton setTitle:@"Remove"];
     [self saveAttachedImage];
+    
+    // Force menu validation to update the File menu item
+    [[NSApp mainMenu] update];
 }
 
 - (void)toggleOptionsDrawer:(id)sender {

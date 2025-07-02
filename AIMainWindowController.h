@@ -17,5 +17,6 @@
 - (void)removeImage:(id)sender;
 - (void)generateImage:(id)sender;
 - (void)toggleOptionsDrawer:(id)sender;
+- (void)attachImageFromSource:(NSImage *)image;
 
 @end
