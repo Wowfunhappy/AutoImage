@@ -23,7 +23,7 @@ static NSString *const kAILastOutputSize = @"AILastOutputSize";
     
     self = [super initWithWindow:window];
     if (self) {
-        [window setTitle:@"AutoImage"];
+        [window setTitle:@"Auto Image"];
         [window center];
         [window setDelegate:self];
         [self setupUI];

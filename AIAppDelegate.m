@@ -19,15 +19,15 @@
     NSMenu *mainMenu = [[NSMenu alloc] init];
     [NSApp setMainMenu:mainMenu];
     
-    // AutoImage menu
+    // Auto Image menu
     NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
-    [appMenuItem setTitle:@"AutoImage"];
+    [appMenuItem setTitle:@"Auto Image"];
     [mainMenu addItem:appMenuItem];
     
-    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"AutoImage"];
+    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"Auto Image"];
     [appMenuItem setSubmenu:appMenu];
     
-    [appMenu addItemWithTitle:@"About AutoImage" action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+    [appMenu addItemWithTitle:@"About Auto Image" action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
     [appMenu addItem:[NSMenuItem separatorItem]];
     
     NSMenuItem *preferencesItem = [appMenu addItemWithTitle:@"Preferences…" action:@selector(showPreferences:) keyEquivalent:@","];
@@ -45,12 +45,12 @@
     [NSApp setServicesMenu:servicesMenu];
     
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Hide AutoImage" action:@selector(hide:) keyEquivalent:@"h"];
+    [appMenu addItemWithTitle:@"Hide Auto Image" action:@selector(hide:) keyEquivalent:@"h"];
     [appMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"H"];
     [appMenu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
     
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Quit AutoImage" action:@selector(terminate:) keyEquivalent:@"q"];
+    [appMenu addItemWithTitle:@"Quit Auto Image" action:@selector(terminate:) keyEquivalent:@"q"];
     
     // File menu
     NSMenuItem *fileMenuItem = [[NSMenuItem alloc] init];
@@ -155,7 +155,7 @@
     NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
     [helpMenuItem setSubmenu:helpMenu];
     
-    [helpMenu addItemWithTitle:@"AutoImage Help" action:@selector(showHelp:) keyEquivalent:@"?"];
+    [helpMenu addItemWithTitle:@"Auto Image Help" action:@selector(showHelp:) keyEquivalent:@"?"];
 }
 
 - (IBAction)showPreferences:(id)sender {

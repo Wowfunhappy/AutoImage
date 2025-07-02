@@ -10,6 +10,9 @@ TARGET = AutoImage.app
 EXECUTABLE = $(TARGET)/Contents/MacOS/AutoImage
 BUNDLE_IDENTIFIER = com.autoimage.AutoImage
 
+# Calendar-based versioning
+VERSION = $(shell date +%Y.%m.%d)
+
 SOURCES = main.m \
           AIAppDelegate.m \
           AIMainWindowController.m \
@@ -50,13 +53,11 @@ Info.plist:
 	@echo '    <key>CFBundleInfoDictionaryVersion</key>' >> Info.plist
 	@echo '    <string>6.0</string>' >> Info.plist
 	@echo '    <key>CFBundleName</key>' >> Info.plist
-	@echo '    <string>AutoImage</string>' >> Info.plist
+	@echo '    <string>Auto Image</string>' >> Info.plist
 	@echo '    <key>CFBundlePackageType</key>' >> Info.plist
 	@echo '    <string>APPL</string>' >> Info.plist
 	@echo '    <key>CFBundleShortVersionString</key>' >> Info.plist
-	@echo '    <string>1.0</string>' >> Info.plist
-	@echo '    <key>CFBundleVersion</key>' >> Info.plist
-	@echo '    <string>1</string>' >> Info.plist
+	@echo '    <string>$(VERSION)</string>' >> Info.plist
 	@echo '    <key>LSMinimumSystemVersion</key>' >> Info.plist
 	@echo '    <string>10.9</string>' >> Info.plist
 	@echo '    <key>NSHighResolutionCapable</key>' >> Info.plist
