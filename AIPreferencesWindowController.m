@@ -107,6 +107,9 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     NSString *apiKey = [self.apiKeyTextField stringValue];
     if ([apiKey length] > 0) {
         [self saveAPIKeyToKeychain:apiKey];
+    } else {
+        // Delete API key from Keychain if empty
+        [self deleteAPIKeyFromKeychain];
     }
     
     // Save moderation to NSUserDefaults
@@ -171,6 +174,20 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     
     if (status != errSecSuccess) {
         NSLog(@"Error saving API key to keychain: %d", (int)status);
+    }
+}
+
+- (void)deleteAPIKeyFromKeychain {
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: kAIKeychainService,
+        (__bridge id)kSecAttrAccount: kAIKeychainAccount
+    };
+    
+    OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+    
+    if (status != errSecSuccess && status != errSecItemNotFound) {
+        NSLog(@"Error deleting API key from keychain: %d", (int)status);
     }
 }
 
