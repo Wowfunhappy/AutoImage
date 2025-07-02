@@ -55,7 +55,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 @implementation AIMainWindowController
 
 - (id)init {
-    NSRect windowRect = NSMakeRect(0, 0, 480, 522);
+    NSRect windowRect = NSMakeRect(0, 0, 430, 400);
     NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                    styleMask:(NSTitledWindowMask |
                                                             NSClosableWindowMask |
@@ -67,7 +67,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self = [super initWithWindow:window];
     if (self) {
         [window setTitle:@"Auto Image"];
-        [window setMinSize:NSMakeSize(480, 340)];
+        [window setMinSize:NSMakeSize(200, 200)];
         [window center];
         [window setDelegate:self];
         
@@ -111,7 +111,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     
     // Generate button (bottom)
     self.generateButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 32)];
-    [self.generateButton setTitle:@"Generate"];
+    [self.generateButton setTitle:@"Create Image"];
     [self.generateButton setBezelStyle:NSRoundedBezelStyle];
     [self.generateButton setTarget:self];
     [self.generateButton setAction:@selector(generateImage:)];
@@ -277,8 +277,6 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
                                                  name:NSDrawerDidCloseNotification
                                                object:self.optionsDrawer];
     
-    // Open drawer by default
-    [self.optionsDrawer open];
 }
 
 - (void)toggleImageAttachment:(id)sender {
@@ -545,6 +543,30 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self saveCurrentState];
 }
 
+- (void)windowDidResize:(NSNotification *)notification {
+    // Calculate minimum height needed for drawer content
+    NSView *drawerContent = [self.optionsDrawer contentView];
+    CGFloat requiredHeight = 0;
+    
+    // Find the bottom-most subview to determine required height
+    // Since the drawer uses a flipped view, we need to find the maximum Y + height
+    for (NSView *subview in [drawerContent subviews]) {
+        CGFloat bottom = NSMaxY([subview frame]);
+        if (bottom > requiredHeight) {
+            requiredHeight = bottom;
+        }
+    }
+    
+    // Add some padding for margins and window chrome
+    requiredHeight += 80;
+    
+    // Check if window is too small for drawer
+    NSRect windowFrame = [[self window] frame];
+    if (NSHeight(windowFrame) < requiredHeight && [self.optionsDrawer state] == NSDrawerOpenState) {
+        [self.optionsDrawer close];
+    }
+}
+
 #pragma mark - NSTextViewDelegate
 
 - (void)textDidChange:(NSNotification *)notification {
@@ -669,6 +691,30 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     if (state == NSDrawerOpenState || state == NSDrawerOpeningState) {
         [self.optionsDrawer close];
     } else {
+        // Calculate minimum height needed for drawer content
+        NSView *drawerContent = [self.optionsDrawer contentView];
+        CGFloat requiredHeight = 0;
+        
+        // Find the bottom-most subview to determine required height
+        for (NSView *subview in [drawerContent subviews]) {
+            CGFloat bottom = NSMaxY([subview frame]);
+            if (bottom > requiredHeight) {
+                requiredHeight = bottom;
+            }
+        }
+        
+        // Add some padding for margins and window chrome
+        requiredHeight += 80;
+        
+        // Check if window is too small and resize if needed
+        NSRect windowFrame = [[self window] frame];
+        if (NSHeight(windowFrame) < requiredHeight) {
+            // Resize window to accommodate drawer
+            windowFrame.origin.y -= (requiredHeight - NSHeight(windowFrame));
+            windowFrame.size.height = requiredHeight;
+            [[self window] setFrame:windowFrame display:YES animate:YES];
+        }
+        
         [self.optionsDrawer open];
     }
 }
