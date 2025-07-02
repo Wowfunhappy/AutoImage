@@ -36,6 +36,15 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 
 @end
 
+@interface AIFlippedView : NSView
+@end
+
+@implementation AIFlippedView
+- (BOOL)isFlipped {
+    return YES;
+}
+@end
+
 @interface AIMainWindowController () <NSWindowDelegate, NSTextViewDelegate, NSUserNotificationCenterDelegate>
 @property (nonatomic, strong) AIImageGenerationManager *imageGenerator;
 @property (nonatomic, strong) NSImage *pendingGeneratedImage;
@@ -68,6 +77,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         [window setContentView:contentView];
         
         [self setupUI];
+        [self setupDrawer];
         
         self.imageGenerator = [[AIImageGenerationManager alloc] init];
         
@@ -113,71 +123,8 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.progressIndicator setHidden:YES];
     [contentView addSubview:self.progressIndicator];
     
-    // Size and Quality controls (on same line above Generate button)
-    currentY += 50;
-    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY + 3, 80, 20)];
-    [sizeLabel setStringValue:@"Output Size:"];
-    [sizeLabel setBordered:NO];
-    [sizeLabel setEditable:NO];
-    [sizeLabel setBackgroundColor:[NSColor clearColor]];
-    [contentView addSubview:sizeLabel];
-    
-    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 85, currentY, 120, 26)];
-    [self.sizePopUpButton addItemsWithTitles:@[@"Square", @"Portrait", @"Landscape"]];
-    
-    // Set tags to map to actual sizes
-    [[self.sizePopUpButton itemAtIndex:0] setTag:1024]; // Square = 1024x1024
-    [[self.sizePopUpButton itemAtIndex:1] setTag:1536]; // Portrait = 1024x1536
-    [[self.sizePopUpButton itemAtIndex:2] setTag:1024]; // Landscape = 1536x1024
-    
-    // Load saved size or default to Portrait
-    NSString *savedSize = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastOutputSize];
-    if (savedSize && [[self.sizePopUpButton itemTitles] containsObject:savedSize]) {
-        [self.sizePopUpButton selectItemWithTitle:savedSize];
-    } else {
-        [self.sizePopUpButton selectItemWithTitle:@"Portrait"];
-    }
-    
-    [contentView addSubview:self.sizePopUpButton];
-    
-    // Quality selection
-    NSTextField *qualityLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + 240, currentY + 3, 50, 20)];
-    [qualityLabel setStringValue:@"Quality:"];
-    [qualityLabel setBordered:NO];
-    [qualityLabel setEditable:NO];
-    [qualityLabel setBackgroundColor:[NSColor clearColor]];
-    [contentView addSubview:qualityLabel];
-    
-    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 295, currentY, 100, 26)];
-    [self.qualityPopUpButton addItemsWithTitles:@[@"Low", @"Medium", @"High"]];
-    
-    // Load saved quality or default to High
-    NSString *savedQuality = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastQuality];
-    if (savedQuality && [[self.qualityPopUpButton itemTitles] containsObject:savedQuality]) {
-        [self.qualityPopUpButton selectItemWithTitle:savedQuality];
-    } else {
-        [self.qualityPopUpButton selectItemWithTitle:@"High"];
-    }
-    
-    [contentView addSubview:self.qualityPopUpButton];
-    
-    // Image attachment area (above output controls with more separation)
-    currentY += 100;
-    self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY + 33, 120, 25)];
-    [self.attachImageButton setTitle:@"Attach Image"];
-    [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
-    [self.attachImageButton setTarget:self];
-    [self.attachImageButton setAction:@selector(toggleImageAttachment:)];
-    [contentView addSubview:self.attachImageButton];
-    
-    self.attachedImageView = [[AIDragDropImageView alloc] initWithFrame:NSMakeRect(margin + 140, currentY, 60, 60)];
-    [self.attachedImageView setImageFrameStyle:NSImageFrameGrayBezel];
-    [self.attachedImageView setImageScaling:NSImageScaleProportionallyUpOrDown];
-    [self.attachedImageView registerForDraggedTypes:@[NSFilenamesPboardType, NSTIFFPboardType, NSPasteboardTypePNG]];
-    [contentView addSubview:self.attachedImageView];
-    
     // Prompt text view with scroll view (fill remaining space)
-    currentY += 70;
+    currentY += 50;
     CGFloat textViewHeight = NSHeight([contentView bounds]) - currentY - margin;
     NSScrollView *scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(margin, 
                                                                              currentY, 
@@ -201,6 +148,121 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     if (savedPrompt) {
         [self.promptTextView setString:savedPrompt];
     }
+}
+
+- (void)setupDrawer {
+    // Create drawer
+    self.optionsDrawer = [[NSDrawer alloc] initWithContentSize:NSMakeSize(250, 400) preferredEdge:NSMaxXEdge];
+    [self.optionsDrawer setParentWindow:[self window]];
+    [self.optionsDrawer setMinContentSize:NSMakeSize(250, 300)];
+    [self.optionsDrawer setMaxContentSize:NSMakeSize(300, 800)];
+    
+    // Create drawer content view with flipped coordinates
+    AIFlippedView *drawerContent = [[AIFlippedView alloc] initWithFrame:NSMakeRect(0, 0, 250, 400)];
+    [self.optionsDrawer setContentView:drawerContent];
+    
+    CGFloat margin = 20;
+    CGFloat currentY = 20; // Start from top with flipped coordinates
+    CGFloat labelWidth = 210;
+    
+    // Title
+    NSTextField *titleLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 24)];
+    [titleLabel setStringValue:@"Options"];
+    [titleLabel setBordered:NO];
+    [titleLabel setEditable:NO];
+    [titleLabel setBackgroundColor:[NSColor clearColor]];
+    [titleLabel setFont:[NSFont boldSystemFontOfSize:16]];
+    [drawerContent addSubview:titleLabel];
+    
+    currentY += 40;
+    
+    // Image attachment section
+    NSTextField *imageLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
+    [imageLabel setStringValue:@"Image Attachment"];
+    [imageLabel setBordered:NO];
+    [imageLabel setEditable:NO];
+    [imageLabel setBackgroundColor:[NSColor clearColor]];
+    [imageLabel setFont:[NSFont boldSystemFontOfSize:13]];
+    [drawerContent addSubview:imageLabel];
+    
+    currentY += 30;
+    
+    self.attachedImageView = [[AIDragDropImageView alloc] initWithFrame:NSMakeRect(margin, currentY, 210, 120)];
+    [self.attachedImageView setImageFrameStyle:NSImageFrameGrayBezel];
+    [self.attachedImageView setImageScaling:NSImageScaleProportionallyUpOrDown];
+    [self.attachedImageView registerForDraggedTypes:@[NSFilenamesPboardType, NSTIFFPboardType, NSPasteboardTypePNG]];
+    [drawerContent addSubview:self.attachedImageView];
+    
+    currentY += 130;
+    
+    self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 25)];
+    [self.attachImageButton setTitle:@"Attach Image"];
+    [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
+    [self.attachImageButton setTarget:self];
+    [self.attachImageButton setAction:@selector(toggleImageAttachment:)];
+    [drawerContent addSubview:self.attachImageButton];
+    
+    currentY += 40;
+    
+    // Output settings section
+    NSTextField *outputLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
+    [outputLabel setStringValue:@"Output Settings"];
+    [outputLabel setBordered:NO];
+    [outputLabel setEditable:NO];
+    [outputLabel setBackgroundColor:[NSColor clearColor]];
+    [outputLabel setFont:[NSFont boldSystemFontOfSize:13]];
+    [drawerContent addSubview:outputLabel];
+    
+    currentY += 30;
+    
+    // Size selection
+    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 50, 20)];
+    [sizeLabel setStringValue:@"Size:"];
+    [sizeLabel setBordered:NO];
+    [sizeLabel setEditable:NO];
+    [sizeLabel setBackgroundColor:[NSColor clearColor]];
+    [drawerContent addSubview:sizeLabel];
+    
+    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 60, currentY - 3, 140, 26)];
+    [self.sizePopUpButton addItemsWithTitles:@[@"Square", @"Portrait", @"Landscape"]];
+    
+    // Set tags to map to actual sizes
+    [[self.sizePopUpButton itemAtIndex:0] setTag:1024]; // Square = 1024x1024
+    [[self.sizePopUpButton itemAtIndex:1] setTag:1536]; // Portrait = 1024x1536
+    [[self.sizePopUpButton itemAtIndex:2] setTag:1024]; // Landscape = 1536x1024
+    
+    // Load saved size or default to Portrait
+    NSString *savedSize = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastOutputSize];
+    if (savedSize && [[self.sizePopUpButton itemTitles] containsObject:savedSize]) {
+        [self.sizePopUpButton selectItemWithTitle:savedSize];
+    } else {
+        [self.sizePopUpButton selectItemWithTitle:@"Portrait"];
+    }
+    
+    [drawerContent addSubview:self.sizePopUpButton];
+    
+    currentY += 35;
+    
+    // Quality selection
+    NSTextField *qualityLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 50, 20)];
+    [qualityLabel setStringValue:@"Quality:"];
+    [qualityLabel setBordered:NO];
+    [qualityLabel setEditable:NO];
+    [qualityLabel setBackgroundColor:[NSColor clearColor]];
+    [drawerContent addSubview:qualityLabel];
+    
+    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 60, currentY - 3, 140, 26)];
+    [self.qualityPopUpButton addItemsWithTitles:@[@"Low", @"Medium", @"High"]];
+    
+    // Load saved quality or default to High
+    NSString *savedQuality = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastQuality];
+    if (savedQuality && [[self.qualityPopUpButton itemTitles] containsObject:savedQuality]) {
+        [self.qualityPopUpButton selectItemWithTitle:savedQuality];
+    } else {
+        [self.qualityPopUpButton selectItemWithTitle:@"High"];
+    }
+    
+    [drawerContent addSubview:self.qualityPopUpButton];
     
     // Load saved attached image
     NSString *savedImagePath = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastAttachedImagePath];
@@ -212,6 +274,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             [self.attachImageButton setTitle:@"Remove Image"];
         }
     }
+    
+    // Open drawer by default
+    [self.optionsDrawer open];
 }
 
 - (void)toggleImageAttachment:(id)sender {
@@ -595,6 +660,15 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.attachedImageView setImage:self.attachedImage];
     [self.attachImageButton setTitle:@"Remove Image"];
     [self saveAttachedImage];
+}
+
+- (void)toggleOptionsDrawer:(id)sender {
+    NSDrawerState state = [self.optionsDrawer state];
+    if (state == NSDrawerOpenState || state == NSDrawerOpeningState) {
+        [self.optionsDrawer close];
+    } else {
+        [self.optionsDrawer open];
+    }
 }
 
 @end

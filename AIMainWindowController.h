@@ -2,6 +2,7 @@
 
 @interface AIMainWindowController : NSWindowController
 
+@property (nonatomic, strong) NSDrawer *optionsDrawer;
 @property (nonatomic, strong) NSTextView *promptTextView;
 @property (nonatomic, strong) NSButton *attachImageButton;
 @property (nonatomic, strong) NSImageView *attachedImageView;
@@ -15,5 +16,6 @@
 - (void)attachImage:(id)sender;
 - (void)removeImage:(id)sender;
 - (void)generateImage:(id)sender;
+- (void)toggleOptionsDrawer:(id)sender;
 
 @end

@@ -132,6 +132,17 @@
     [editMenu addItemWithTitle:@"Start Dictation…" action:@selector(startDictation:) keyEquivalent:@""];
     [editMenu addItemWithTitle:@"Emoji & Symbols" action:@selector(orderFrontCharacterPalette:) keyEquivalent:@" "];
     
+    // View menu
+    NSMenuItem *viewMenuItem = [[NSMenuItem alloc] init];
+    [viewMenuItem setTitle:@"View"];
+    [mainMenu addItem:viewMenuItem];
+    
+    NSMenu *viewMenu = [[NSMenu alloc] initWithTitle:@"View"];
+    [viewMenuItem setSubmenu:viewMenu];
+    
+    NSMenuItem *toggleDrawerItem = [viewMenu addItemWithTitle:@"Show Options" action:@selector(toggleOptionsDrawer:) keyEquivalent:@"d"];
+    [toggleDrawerItem setTag:101]; // Tag for drawer toggle
+    
     // Window menu
     NSMenuItem *windowMenuItem = [[NSMenuItem alloc] init];
     [windowMenuItem setTitle:@"Window"];
@@ -181,6 +192,10 @@
     [self.mainWindowController generateImage:nil];
 }
 
+- (IBAction)toggleOptionsDrawer:(id)sender {
+    [self.mainWindowController toggleOptionsDrawer:sender];
+}
+
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
     return YES;
 }
@@ -191,6 +206,13 @@
             [menuItem setTitle:@"Remove Image"];
         } else {
             [menuItem setTitle:@"Attach Image…"];
+        }
+    } else if ([menuItem tag] == 101) { // Toggle drawer menu item
+        NSDrawerState state = [self.mainWindowController.optionsDrawer state];
+        if (state == NSDrawerOpenState || state == NSDrawerOpeningState) {
+            [menuItem setTitle:@"Hide Options"];
+        } else {
+            [menuItem setTitle:@"Show Options"];
         }
     }
     return YES;
