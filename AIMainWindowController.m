@@ -94,6 +94,8 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         if (NSClassFromString(@"NSUserNotificationCenter") != nil) {
             [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
         }
+        
+        // Drawer notifications will be set up after drawer is created
     }
     return self;
 }
@@ -117,10 +119,11 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [contentView addSubview:self.generateButton];
     
     // Progress indicator (next to generate button)
-    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 7, 300, 20)];
+    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 7, windowWidth - (margin + 140) - margin, 20)];
     [self.progressIndicator setStyle:NSProgressIndicatorBarStyle];
     [self.progressIndicator setIndeterminate:YES];
     [self.progressIndicator setHidden:YES];
+    [self.progressIndicator setAutoresizingMask:NSViewWidthSizable];
     [contentView addSubview:self.progressIndicator];
     
     // Prompt text view with scroll view (fill remaining space)
@@ -165,20 +168,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     CGFloat currentY = 20; // Start from top with flipped coordinates
     CGFloat labelWidth = 210;
     
-    // Title
-    NSTextField *titleLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 24)];
-    [titleLabel setStringValue:@"Options"];
-    [titleLabel setBordered:NO];
-    [titleLabel setEditable:NO];
-    [titleLabel setBackgroundColor:[NSColor clearColor]];
-    [titleLabel setFont:[NSFont boldSystemFontOfSize:16]];
-    [drawerContent addSubview:titleLabel];
-    
-    currentY += 40;
-    
     // Image attachment section
     NSTextField *imageLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
-    [imageLabel setStringValue:@"Image Attachment"];
+    [imageLabel setStringValue:@"Reference Image"];
     [imageLabel setBordered:NO];
     [imageLabel setEditable:NO];
     [imageLabel setBackgroundColor:[NSColor clearColor]];
@@ -196,13 +188,13 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     currentY += 130;
     
     self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 25)];
-    [self.attachImageButton setTitle:@"Attach Image"];
+    [self.attachImageButton setTitle:@"Choose..."];
     [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
     [self.attachImageButton setTarget:self];
     [self.attachImageButton setAction:@selector(toggleImageAttachment:)];
     [drawerContent addSubview:self.attachImageButton];
     
-    currentY += 40;
+    currentY += 60;
     
     // Output settings section
     NSTextField *outputLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
@@ -213,7 +205,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [outputLabel setFont:[NSFont boldSystemFontOfSize:13]];
     [drawerContent addSubview:outputLabel];
     
-    currentY += 30;
+    currentY += 32;
     
     // Size selection
     NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 50, 20)];
@@ -271,9 +263,19 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         if (savedImage) {
             self.attachedImage = savedImage;
             [self.attachedImageView setImage:self.attachedImage];
-            [self.attachImageButton setTitle:@"Remove Image"];
+            [self.attachImageButton setTitle:@"Remove"];
         }
     }
+    
+    // Add observer for drawer state changes
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(drawerDidOpen:)
+                                                 name:NSDrawerDidOpenNotification
+                                               object:self.optionsDrawer];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(drawerDidClose:)
+                                                 name:NSDrawerDidCloseNotification
+                                               object:self.optionsDrawer];
     
     // Open drawer by default
     [self.optionsDrawer open];
@@ -297,7 +299,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             NSURL *url = [[openPanel URLs] objectAtIndex:0];
             self.attachedImage = [[NSImage alloc] initWithContentsOfURL:url];
             [self.attachedImageView setImage:self.attachedImage];
-            [self.attachImageButton setTitle:@"Remove Image"];
+            [self.attachImageButton setTitle:@"Remove"];
             
             // Save image to application support directory
             [self saveAttachedImage];
@@ -308,7 +310,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 - (void)removeImage:(id)sender {
     self.attachedImage = nil;
     [self.attachedImageView setImage:nil];
-    [self.attachImageButton setTitle:@"Attach Image"];
+    [self.attachImageButton setTitle:@"Choose..."];
     
     // Clear saved image
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:kAILastAttachedImagePath];
@@ -658,7 +660,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 - (void)attachImageFromSource:(NSImage *)image {
     self.attachedImage = image;
     [self.attachedImageView setImage:self.attachedImage];
-    [self.attachImageButton setTitle:@"Remove Image"];
+    [self.attachImageButton setTitle:@"Remove"];
     [self saveAttachedImage];
 }
 
@@ -668,6 +670,24 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         [self.optionsDrawer close];
     } else {
         [self.optionsDrawer open];
+    }
+}
+
+#pragma mark - Drawer Notifications
+
+- (void)drawerDidOpen:(NSNotification *)notification {
+    NSMenu *viewMenu = [[[NSApp mainMenu] itemWithTitle:@"View"] submenu];
+    NSMenuItem *drawerMenuItem = [viewMenu itemWithTag:101];
+    if (drawerMenuItem) {
+        [drawerMenuItem setTitle:@"Hide Side Drawer"];
+    }
+}
+
+- (void)drawerDidClose:(NSNotification *)notification {
+    NSMenu *viewMenu = [[[NSApp mainMenu] itemWithTitle:@"View"] submenu];
+    NSMenuItem *drawerMenuItem = [viewMenu itemWithTag:101];
+    if (drawerMenuItem) {
+        [drawerMenuItem setTitle:@"Show Side Drawer"];
     }
 }
 

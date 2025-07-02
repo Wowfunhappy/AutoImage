@@ -60,14 +60,14 @@
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
     [fileMenuItem setSubmenu:fileMenu];
     
-    NSMenuItem *clearItem = [fileMenu addItemWithTitle:@"Clear" action:@selector(newDocument:) keyEquivalent:@""];
+    NSMenuItem *clearItem = [fileMenu addItemWithTitle:@"Clear All" action:@selector(newDocument:) keyEquivalent:@""];
     [clearItem setTarget:self];
     
-    NSMenuItem *attachImageItem = [fileMenu addItemWithTitle:@"Attach Image…" action:@selector(attachImage:) keyEquivalent:@""];
+    NSMenuItem *attachImageItem = [fileMenu addItemWithTitle:@"Add Reference Image…" action:@selector(attachImage:) keyEquivalent:@""];
     [attachImageItem setTarget:self];
     [attachImageItem setTag:100]; // Tag to identify this menu item
     
-    NSMenuItem *generateItem = [fileMenu addItemWithTitle:@"Generate" action:@selector(generateImage:) keyEquivalent:@"g"];
+    NSMenuItem *generateItem = [fileMenu addItemWithTitle:@"Create Image" action:@selector(generateImage:) keyEquivalent:@""];
     [generateItem setTarget:self];
     
     [fileMenu addItem:[NSMenuItem separatorItem]];
@@ -140,7 +140,7 @@
     NSMenu *viewMenu = [[NSMenu alloc] initWithTitle:@"View"];
     [viewMenuItem setSubmenu:viewMenu];
     
-    NSMenuItem *toggleDrawerItem = [viewMenu addItemWithTitle:@"Show Options" action:@selector(toggleOptionsDrawer:) keyEquivalent:@"d"];
+    NSMenuItem *toggleDrawerItem = [viewMenu addItemWithTitle:@"Show Side Drawer" action:@selector(toggleOptionsDrawer:) keyEquivalent:@"d"];
     [toggleDrawerItem setTag:101]; // Tag for drawer toggle
     
     // Window menu
@@ -203,17 +203,12 @@
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
     if ([menuItem tag] == 100) { // Attach Image menu item
         if (self.mainWindowController.attachedImage) {
-            [menuItem setTitle:@"Remove Image"];
+            [menuItem setTitle:@"Remove Reference Image"];
         } else {
-            [menuItem setTitle:@"Attach Image…"];
+            [menuItem setTitle:@"Add Reference Image…"];
         }
     } else if ([menuItem tag] == 101) { // Toggle drawer menu item
-        NSDrawerState state = [self.mainWindowController.optionsDrawer state];
-        if (state == NSDrawerOpenState || state == NSDrawerOpeningState) {
-            [menuItem setTitle:@"Hide Options"];
-        } else {
-            [menuItem setTitle:@"Show Options"];
-        }
+        // Menu title is now updated directly by drawer notifications
     }
     return YES;
 }
