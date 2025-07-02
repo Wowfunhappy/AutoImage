@@ -8,7 +8,7 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
 @implementation AIPreferencesWindowController
 
 - (id)init {
-    NSRect windowRect = NSMakeRect(0, 0, 400, 200);
+    NSRect windowRect = NSMakeRect(0, 0, 500, 150);
     NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                    styleMask:(NSTitledWindowMask |
                                                             NSClosableWindowMask)
@@ -29,8 +29,9 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     NSView *contentView = [[self window] contentView];
     
     CGFloat margin = 20;
-    CGFloat labelWidth = 120;
-    CGFloat currentY = NSHeight([contentView bounds]) - margin - 30;
+    CGFloat labelWidth = 90;
+    CGFloat windowWidth = NSWidth([contentView bounds]);
+    CGFloat currentY = NSHeight([contentView bounds]) - margin - 25;
     
     // API Key
     NSTextField *apiKeyLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
@@ -41,13 +42,13 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [apiKeyLabel setAlignment:NSRightTextAlignment];
     [contentView addSubview:apiKeyLabel];
     
-    self.apiKeyTextField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, currentY - 2, 230, 22)];
+    self.apiKeyTextField = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + labelWidth + 10, currentY - 2, windowWidth - margin - labelWidth - 10 - margin, 22)];
     [[self.apiKeyTextField cell] setPlaceholderString:@"sk-..."];
     [[self.apiKeyTextField cell] setUsesSingleLineMode:YES];
     [contentView addSubview:self.apiKeyTextField];
     
     // Moderation level
-    currentY -= 40;
+    currentY -= 35;
     NSTextField *moderationLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, labelWidth, 20)];
     [moderationLabel setStringValue:@"Moderation:"];
     [moderationLabel setBordered:NO];
@@ -61,7 +62,7 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [contentView addSubview:self.moderationPopUpButton];
     
     // Save button
-    currentY -= 50;
+    currentY -= 40;
     NSButton *saveButton = [[NSButton alloc] initWithFrame:NSMakeRect(NSWidth([contentView bounds]) - margin - 80, currentY, 80, 32)];
     [saveButton setTitle:@"Save"];
     [saveButton setBezelStyle:NSRoundedBezelStyle];

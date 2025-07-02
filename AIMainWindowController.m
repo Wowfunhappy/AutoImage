@@ -33,26 +33,43 @@
     NSView *contentView = [[self window] contentView];
     
     CGFloat margin = 20;
-    CGFloat currentY = NSHeight([contentView bounds]) - margin;
+    CGFloat windowWidth = NSWidth([contentView bounds]);
     
-    // Prompt text view with scroll view
-    currentY -= 200;
-    NSScrollView *scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(margin, currentY, 
-                                                                             NSWidth([contentView bounds]) - 2 * margin, 200)];
-    [scrollView setHasVerticalScroller:YES];
-    [scrollView setBorderType:NSBezelBorder];
-    [scrollView setAutoresizingMask:NSViewWidthSizable | NSViewMinYMargin];
+    // Start from the bottom and work up
+    CGFloat currentY = margin;
     
-    self.promptTextView = [[NSTextView alloc] initWithFrame:[[scrollView contentView] bounds]];
-    [self.promptTextView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [self.promptTextView setRichText:NO];
-    [self.promptTextView setFont:[NSFont systemFontOfSize:13]];
+    // Generate button (bottom)
+    self.generateButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 32)];
+    [self.generateButton setTitle:@"Generate"];
+    [self.generateButton setBezelStyle:NSRoundedBezelStyle];
+    [self.generateButton setTarget:self];
+    [self.generateButton setAction:@selector(generateImage:)];
+    [self.generateButton setKeyEquivalent:@"\r"];
+    [contentView addSubview:self.generateButton];
     
-    [scrollView setDocumentView:self.promptTextView];
-    [contentView addSubview:scrollView];
+    // Progress indicator (next to generate button)
+    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 6, 300, 20)];
+    [self.progressIndicator setStyle:NSProgressIndicatorBarStyle];
+    [self.progressIndicator setIndeterminate:YES];
+    [self.progressIndicator setHidden:YES];
+    [contentView addSubview:self.progressIndicator];
+    
+    // Size selection
+    currentY += 50;
+    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY + 3, 100, 20)];
+    [sizeLabel setStringValue:@"Output Size:"];
+    [sizeLabel setBordered:NO];
+    [sizeLabel setEditable:NO];
+    [sizeLabel setBackgroundColor:[NSColor clearColor]];
+    [contentView addSubview:sizeLabel];
+    
+    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 110, currentY, 200, 26)];
+    [self.sizePopUpButton addItemsWithTitles:@[@"1024x1024", @"1024x1536", @"1536x1024"]];
+    [self.sizePopUpButton selectItemWithTitle:@"1024x1536"];
+    [contentView addSubview:self.sizePopUpButton];
     
     // Image attachment area
-    currentY -= 80;
+    currentY += 50;
     self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 25)];
     [self.attachImageButton setTitle:@"Attach Image"];
     [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
@@ -68,41 +85,29 @@
     [self.removeImageButton setEnabled:NO];
     [contentView addSubview:self.removeImageButton];
     
-    self.attachedImageView = [[NSImageView alloc] initWithFrame:NSMakeRect(margin + 260, currentY - 30, 60, 60)];
+    self.attachedImageView = [[NSImageView alloc] initWithFrame:NSMakeRect(margin + 260, currentY - 17, 60, 60)];
     [self.attachedImageView setImageFrameStyle:NSImageFrameGrayBezel];
     [self.attachedImageView setImageScaling:NSImageScaleProportionallyUpOrDown];
     [contentView addSubview:self.attachedImageView];
     
-    // Size selection
-    currentY -= 50;
-    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 100, 20)];
-    [sizeLabel setStringValue:@"Output Size:"];
-    [sizeLabel setBordered:NO];
-    [sizeLabel setEditable:NO];
-    [sizeLabel setBackgroundColor:[NSColor clearColor]];
-    [contentView addSubview:sizeLabel];
+    // Prompt text view with scroll view (fill remaining space)
+    currentY += 70;
+    CGFloat textViewHeight = NSHeight([contentView bounds]) - currentY - margin;
+    NSScrollView *scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(margin, 
+                                                                             currentY, 
+                                                                             windowWidth - 2 * margin, 
+                                                                             textViewHeight)];
+    [scrollView setHasVerticalScroller:YES];
+    [scrollView setBorderType:NSBezelBorder];
+    [scrollView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     
-    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 110, currentY - 2, 200, 25)];
-    [self.sizePopUpButton addItemsWithTitles:@[@"1024x1024", @"1024x1536", @"1536x1024"]];
-    [self.sizePopUpButton selectItemWithTitle:@"1024x1536"];
-    [contentView addSubview:self.sizePopUpButton];
+    self.promptTextView = [[NSTextView alloc] initWithFrame:[[scrollView contentView] bounds]];
+    [self.promptTextView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [self.promptTextView setRichText:NO];
+    [self.promptTextView setFont:[NSFont systemFontOfSize:13]];
     
-    // Generate button
-    currentY -= 50;
-    self.generateButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 32)];
-    [self.generateButton setTitle:@"Generate"];
-    [self.generateButton setBezelStyle:NSRoundedBezelStyle];
-    [self.generateButton setTarget:self];
-    [self.generateButton setAction:@selector(generateImage:)];
-    [self.generateButton setKeyEquivalent:@"\r"];
-    [contentView addSubview:self.generateButton];
-    
-    // Progress indicator
-    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 8, 200, 20)];
-    [self.progressIndicator setStyle:NSProgressIndicatorBarStyle];
-    [self.progressIndicator setIndeterminate:YES];
-    [self.progressIndicator setHidden:YES];
-    [contentView addSubview:self.progressIndicator];
+    [scrollView setDocumentView:self.promptTextView];
+    [contentView addSubview:scrollView];
 }
 
 - (void)attachImage:(id)sender {
