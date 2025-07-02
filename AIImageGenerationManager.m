@@ -293,7 +293,9 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
                                                        queue:[NSOperationQueue mainQueue]
                                                   usingBlock:^(NSNotification *note) {
         NSString *text = [textField stringValue];
-        [okButton setEnabled:([text length] > 0)];
+        // Enable OK button only if text starts with "sk-" and has more characters after
+        BOOL isValid = [text length] > 3 && [text hasPrefix:@"sk-"];
+        [okButton setEnabled:isValid];
     }];
     
     NSInteger result = [alert runModal];

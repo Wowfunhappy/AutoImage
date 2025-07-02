@@ -5,6 +5,9 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 static NSString *const kAIKeychainService = @"AutoImage";
 static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
 
+@interface AIPreferencesWindowController () <NSWindowDelegate>
+@end
+
 @implementation AIPreferencesWindowController
 
 - (id)init {
@@ -19,6 +22,7 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     if (self) {
         [window setTitle:@"Preferences"];
         [window center];
+        [window setDelegate:self];
         [self setupUI];
         [self loadPreferences];
     }
@@ -70,13 +74,13 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     
     // Buttons at bottom
     CGFloat buttonY = margin;
-    NSButton *saveButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 80, buttonY, 80, buttonHeight)];
-    [saveButton setTitle:@"Save"];
-    [saveButton setBezelStyle:NSRoundedBezelStyle];
-    [saveButton setTarget:self];
-    [saveButton setAction:@selector(savePreferences:)];
-    [saveButton setKeyEquivalent:@"\r"];
-    [contentView addSubview:saveButton];
+    self.saveButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 80, buttonY, 80, buttonHeight)];
+    [self.saveButton setTitle:@"Save"];
+    [self.saveButton setBezelStyle:NSRoundedBezelStyle];
+    [self.saveButton setTarget:self];
+    [self.saveButton setAction:@selector(savePreferences:)];
+    [self.saveButton setKeyEquivalent:@"\r"];
+    [contentView addSubview:self.saveButton];
     
     NSButton *cancelButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 170, buttonY, 80, buttonHeight)];
     [cancelButton setTitle:@"Cancel"];
@@ -85,6 +89,12 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     [cancelButton setAction:@selector(cancel:)];
     [cancelButton setKeyEquivalent:@"\033"];
     [contentView addSubview:cancelButton];
+    
+    // Monitor API key text field changes
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(apiKeyTextDidChange:)
+                                                 name:NSControlTextDidChangeNotification
+                                               object:self.apiKeyTextField];
 }
 
 - (void)loadPreferences {
@@ -100,6 +110,9 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
         moderation = @"Normal";
     }
     [self.moderationPopUpButton selectItemWithTitle:moderation];
+    
+    // Validate initial API key state
+    [self validateAPIKey];
 }
 
 - (void)savePreferences:(id)sender {
@@ -122,6 +135,17 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
 
 - (void)cancel:(id)sender {
     [[self window] close];
+}
+
+- (void)apiKeyTextDidChange:(NSNotification *)notification {
+    [self validateAPIKey];
+}
+
+- (void)validateAPIKey {
+    NSString *apiKey = [self.apiKeyTextField stringValue];
+    // Enable save button if empty (to allow deletion) or if valid format
+    BOOL isValid = ([apiKey length] == 0) || ([apiKey length] > 3 && [apiKey hasPrefix:@"sk-"]);
+    [self.saveButton setEnabled:isValid];
 }
 
 #pragma mark - Keychain Methods
@@ -189,6 +213,22 @@ static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
     if (status != errSecSuccess && status != errSecItemNotFound) {
         NSLog(@"Error deleting API key from keychain: %d", (int)status);
     }
+}
+
+#pragma mark - NSWindowDelegate
+
+- (BOOL)windowShouldClose:(id)sender {
+    // Don't save if API key is invalid
+    NSString *apiKey = [self.apiKeyTextField stringValue];
+    BOOL isValid = ([apiKey length] == 0) || ([apiKey length] > 3 && [apiKey hasPrefix:@"sk-"]);
+    
+    if (!isValid) {
+        // Just close without saving
+        return YES;
+    }
+    
+    // If valid, we could optionally auto-save here, but for now just close
+    return YES;
 }
 
 @end
