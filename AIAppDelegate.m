@@ -47,7 +47,19 @@
     NSMenuItem *newItem = [fileMenu addItemWithTitle:@"New" action:@selector(newDocument:) keyEquivalent:@"n"];
     [newItem setTarget:self];
     
-    [fileMenu addItemWithTitle:@"Save" action:@selector(saveDocument:) keyEquivalent:@"s"];
+    [fileMenu addItem:[NSMenuItem separatorItem]];
+    
+    NSMenuItem *attachImageItem = [fileMenu addItemWithTitle:@"Attach Image…" action:@selector(attachImage:) keyEquivalent:@""];
+    [attachImageItem setTarget:self];
+    [attachImageItem setTag:100]; // Tag to identify this menu item
+    
+    [fileMenu addItem:[NSMenuItem separatorItem]];
+    
+    NSMenuItem *generateItem = [fileMenu addItemWithTitle:@"Generate" action:@selector(generateImage:) keyEquivalent:@"g"];
+    [generateItem setTarget:self];
+    
+    [fileMenu addItem:[NSMenuItem separatorItem]];
+    
     [fileMenu addItemWithTitle:@"Close" action:@selector(performClose:) keyEquivalent:@"w"];
     
     // Edit menu
@@ -103,7 +115,30 @@
     [self.mainWindowController clearDocument];
 }
 
+- (IBAction)attachImage:(id)sender {
+    if (self.mainWindowController.attachedImage) {
+        [self.mainWindowController removeImage:nil];
+    } else {
+        [self.mainWindowController attachImage:nil];
+    }
+}
+
+- (IBAction)generateImage:(id)sender {
+    [self.mainWindowController generateImage:nil];
+}
+
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
+    return YES;
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
+    if ([menuItem tag] == 100) { // Attach Image menu item
+        if (self.mainWindowController.attachedImage) {
+            [menuItem setTitle:@"Remove Image"];
+        } else {
+            [menuItem setTitle:@"Attach Image…"];
+        }
+    }
     return YES;
 }
 

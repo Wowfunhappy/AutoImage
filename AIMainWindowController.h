@@ -11,5 +11,8 @@
 @property (nonatomic, strong) NSImage *attachedImage;
 
 - (void)clearDocument;
+- (void)attachImage:(id)sender;
+- (void)removeImage:(id)sender;
+- (void)generateImage:(id)sender;
 
 @end
