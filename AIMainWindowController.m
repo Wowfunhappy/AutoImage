@@ -141,6 +141,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.promptTextView setRichText:NO];
     [self.promptTextView setFont:[NSFont systemFontOfSize:13]];
     [self.promptTextView setDelegate:self];
+    [self.promptTextView setAllowsUndo:YES];
     
     [scrollView setDocumentView:self.promptTextView];
     [contentView addSubview:scrollView];
