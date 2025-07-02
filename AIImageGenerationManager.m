@@ -60,7 +60,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kAIOpenAIEditsEndpoint]];
         [request setHTTPMethod:@"POST"];
         [request setValue:[NSString stringWithFormat:@"Bearer %@", apiKey] forHTTPHeaderField:@"Authorization"];
-        [request setTimeoutInterval:60.0];
+        [request setTimeoutInterval:300.0]; // 5 minutes for image generation
         
         // Create multipart form data
         NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
@@ -105,7 +105,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
         [request setHTTPMethod:@"POST"];
         [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
         [request setValue:[NSString stringWithFormat:@"Bearer %@", apiKey] forHTTPHeaderField:@"Authorization"];
-        [request setTimeoutInterval:60.0];
+        [request setTimeoutInterval:300.0]; // 5 minutes for image generation
         
         NSDictionary *requestBody = @{
             @"model": @"gpt-image-1",
