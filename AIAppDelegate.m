@@ -34,6 +34,22 @@
     [preferencesItem setTarget:self];
     
     [appMenu addItem:[NSMenuItem separatorItem]];
+    
+    // Services submenu
+    NSMenuItem *servicesMenuItem = [[NSMenuItem alloc] init];
+    [servicesMenuItem setTitle:@"Services"];
+    [appMenu addItem:servicesMenuItem];
+    
+    NSMenu *servicesMenu = [[NSMenu alloc] initWithTitle:@"Services"];
+    [servicesMenuItem setSubmenu:servicesMenu];
+    [NSApp setServicesMenu:servicesMenu];
+    
+    [appMenu addItem:[NSMenuItem separatorItem]];
+    [appMenu addItemWithTitle:@"Hide AutoImage" action:@selector(hide:) keyEquivalent:@"h"];
+    [appMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"H"];
+    [appMenu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
+    
+    [appMenu addItem:[NSMenuItem separatorItem]];
     [appMenu addItemWithTitle:@"Quit AutoImage" action:@selector(terminate:) keyEquivalent:@"q"];
     
     // File menu
@@ -72,7 +88,49 @@
     [editMenu addItemWithTitle:@"Cut" action:@selector(cut:) keyEquivalent:@"x"];
     [editMenu addItemWithTitle:@"Copy" action:@selector(copy:) keyEquivalent:@"c"];
     [editMenu addItemWithTitle:@"Paste" action:@selector(paste:) keyEquivalent:@"v"];
+    [editMenu addItemWithTitle:@"Delete" action:@selector(delete:) keyEquivalent:@""];
     [editMenu addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
+    
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    
+    // Find submenu
+    NSMenuItem *findMenuItem = [[NSMenuItem alloc] init];
+    [findMenuItem setTitle:@"Find"];
+    [editMenu addItem:findMenuItem];
+    
+    NSMenu *findMenu = [[NSMenu alloc] initWithTitle:@"Find"];
+    [findMenuItem setSubmenu:findMenu];
+    
+    [findMenu addItemWithTitle:@"Find…" action:@selector(performFindPanelAction:) keyEquivalent:@"f"];
+    [findMenu addItemWithTitle:@"Find Next" action:@selector(performFindPanelAction:) keyEquivalent:@"g"];
+    [findMenu addItemWithTitle:@"Find Previous" action:@selector(performFindPanelAction:) keyEquivalent:@"G"];
+    [findMenu addItemWithTitle:@"Use Selection for Find" action:@selector(performFindPanelAction:) keyEquivalent:@"e"];
+    
+    // Spelling and Grammar submenu
+    NSMenuItem *spellingMenuItem = [[NSMenuItem alloc] init];
+    [spellingMenuItem setTitle:@"Spelling and Grammar"];
+    [editMenu addItem:spellingMenuItem];
+    
+    NSMenu *spellingMenu = [[NSMenu alloc] initWithTitle:@"Spelling and Grammar"];
+    [spellingMenuItem setSubmenu:spellingMenu];
+    
+    [spellingMenu addItemWithTitle:@"Show Spelling and Grammar" action:@selector(showGuessPanel:) keyEquivalent:@":"];
+    [spellingMenu addItemWithTitle:@"Check Document Now" action:@selector(checkSpelling:) keyEquivalent:@";"];
+    
+    // Substitutions submenu
+    NSMenuItem *substitutionsMenuItem = [[NSMenuItem alloc] init];
+    [substitutionsMenuItem setTitle:@"Substitutions"];
+    [editMenu addItem:substitutionsMenuItem];
+    
+    NSMenu *substitutionsMenu = [[NSMenu alloc] initWithTitle:@"Substitutions"];
+    [substitutionsMenuItem setSubmenu:substitutionsMenu];
+    
+    [substitutionsMenu addItemWithTitle:@"Show Substitutions" action:@selector(orderFrontSubstitutionsPanel:) keyEquivalent:@""];
+    
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    
+    [editMenu addItemWithTitle:@"Start Dictation…" action:@selector(startDictation:) keyEquivalent:@""];
+    [editMenu addItemWithTitle:@"Emoji & Symbols" action:@selector(orderFrontCharacterPalette:) keyEquivalent:@" "];
     
     // Window menu
     NSMenuItem *windowMenuItem = [[NSMenuItem alloc] init];
