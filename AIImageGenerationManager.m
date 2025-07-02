@@ -46,7 +46,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
     // Get moderation level
     NSString *moderation = [[NSUserDefaults standardUserDefaults] stringForKey:kAIPreferencesModeration];
     if ([moderation isEqualToString:@"Normal"]) {
-        moderation = @"normal";
+        moderation = @"auto";
     } else {
         moderation = @"low";
     }
