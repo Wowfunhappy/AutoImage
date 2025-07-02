@@ -2,7 +2,8 @@
 #import "AIPreferencesWindowController.h"
 #import <Security/Security.h>
 
-static NSString *const kAIOpenAIEndpoint = @"https://api.openai.com/v1/images/generations";
+static NSString *const kAIOpenAIGenerationsEndpoint = @"https://api.openai.com/v1/images/generations";
+static NSString *const kAIOpenAIEditsEndpoint = @"https://api.openai.com/v1/images/edits";
 static NSString *const kAIKeychainService = @"AutoImage";
 static NSString *const kAIKeychainAccount = @"OpenAI-API-Key";
 static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
@@ -27,6 +28,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 
 - (void)generateImageWithPrompt:(NSString *)prompt
                           size:(NSString *)size
+                       quality:(NSString *)quality
                   attachedImage:(NSImage *)attachedImage
               completionHandler:(AIImageGenerationCompletionHandler)completionHandler {
     
@@ -51,39 +53,79 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
         moderation = @"low";
     }
     
-    // Build request body
-    NSMutableDictionary *requestBody = [@{
-        @"model": @"gpt-image-1",
-        @"prompt": prompt,
-        @"n": @1,
-        @"size": size,
-        @"quality": @"high",
-        @"moderation": moderation
-    } mutableCopy];
+    NSMutableURLRequest *request;
     
-    // Add attached image if present
     if (attachedImage) {
-        NSString *base64Image = [self base64StringFromImage:attachedImage];
-        if (base64Image) {
-            [requestBody setObject:@[@{@"b64_json": base64Image}] forKey:@"images"];
+        // Use edits endpoint with multipart/form-data
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kAIOpenAIEditsEndpoint]];
+        [request setHTTPMethod:@"POST"];
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", apiKey] forHTTPHeaderField:@"Authorization"];
+        [request setTimeoutInterval:60.0];
+        
+        // Create multipart form data
+        NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
+        [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary] forHTTPHeaderField:@"Content-Type"];
+        
+        NSMutableData *body = [NSMutableData data];
+        
+        // Add image
+        NSData *imageData = [self pngDataFromImage:attachedImage];
+        if (imageData) {
+            [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[@"Content-Disposition: form-data; name=\"image\"; filename=\"image.png\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[@"Content-Type: image/png\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:imageData];
+            [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         }
+        
+        // Add other fields
+        NSDictionary *fields = @{
+            @"model": @"gpt-image-1",
+            @"prompt": prompt,
+            @"n": @"1",
+            @"size": size,
+            @"quality": quality,
+            @"background": @"auto",
+            @"moderation": moderation
+        };
+        
+        for (NSString *key in fields) {
+            [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", key] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[[fields objectForKey:key] dataUsingEncoding:NSUTF8StringEncoding]];
+            [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        
+        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [request setHTTPBody:body];
+        
+    } else {
+        // Use generations endpoint with JSON
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kAIOpenAIGenerationsEndpoint]];
+        [request setHTTPMethod:@"POST"];
+        [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", apiKey] forHTTPHeaderField:@"Authorization"];
+        [request setTimeoutInterval:60.0];
+        
+        NSDictionary *requestBody = @{
+            @"model": @"gpt-image-1",
+            @"prompt": prompt,
+            @"n": @1,
+            @"size": size,
+            @"quality": quality,
+            @"moderation": moderation
+        };
+        
+        NSError *jsonError;
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:requestBody options:0 error:&jsonError];
+        
+        if (jsonError) {
+            completionHandler(nil, jsonError);
+            return;
+        }
+        
+        [request setHTTPBody:jsonData];
     }
-    
-    NSError *jsonError;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:requestBody options:0 error:&jsonError];
-    
-    if (jsonError) {
-        completionHandler(nil, jsonError);
-        return;
-    }
-    
-    // Create request
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:kAIOpenAIEndpoint]];
-    [request setHTTPMethod:@"POST"];
-    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    [request setValue:[NSString stringWithFormat:@"Bearer %@", apiKey] forHTTPHeaderField:@"Authorization"];
-    [request setHTTPBody:jsonData];
-    [request setTimeoutInterval:60.0];
     
     self.currentRequest = request;
     [self sendRequest];
@@ -185,11 +227,10 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 
 #pragma mark - Helper Methods
 
-- (NSString *)base64StringFromImage:(NSImage *)image {
+- (NSData *)pngDataFromImage:(NSImage *)image {
     NSData *imageData = [image TIFFRepresentation];
     NSBitmapImageRep *imageRep = [NSBitmapImageRep imageRepWithData:imageData];
-    NSData *pngData = [imageRep representationUsingType:NSPNGFileType properties:@{}];
-    return [pngData base64EncodedStringWithOptions:0];
+    return [imageRep representationUsingType:NSPNGFileType properties:@{}];
 }
 
 - (NSString *)loadAPIKeyFromKeychain {

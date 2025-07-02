@@ -7,6 +7,7 @@ typedef void (^AIImageGenerationCompletionHandler)(NSImage *image, NSError *erro
 
 - (void)generateImageWithPrompt:(NSString *)prompt
                           size:(NSString *)size
+                       quality:(NSString *)quality
                   attachedImage:(NSImage *)attachedImage
               completionHandler:(AIImageGenerationCompletionHandler)completionHandler;
 
