@@ -104,16 +104,16 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.progressIndicator setHidden:YES];
     [contentView addSubview:self.progressIndicator];
     
-    // Size selection
+    // Size and Quality controls (on same line above Generate button)
     currentY += 50;
-    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY + 3, 100, 20)];
+    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY + 3, 80, 20)];
     [sizeLabel setStringValue:@"Output Size:"];
     [sizeLabel setBordered:NO];
     [sizeLabel setEditable:NO];
     [sizeLabel setBackgroundColor:[NSColor clearColor]];
     [contentView addSubview:sizeLabel];
     
-    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 110, currentY, 120, 26)];
+    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 85, currentY, 120, 26)];
     [self.sizePopUpButton addItemsWithTitles:@[@"Square", @"Portrait", @"Landscape"]];
     
     // Set tags to map to actual sizes
@@ -132,14 +132,14 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [contentView addSubview:self.sizePopUpButton];
     
     // Quality selection
-    NSTextField *qualityLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + 250, currentY + 3, 60, 20)];
+    NSTextField *qualityLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin + 240, currentY + 3, 50, 20)];
     [qualityLabel setStringValue:@"Quality:"];
     [qualityLabel setBordered:NO];
     [qualityLabel setEditable:NO];
     [qualityLabel setBackgroundColor:[NSColor clearColor]];
     [contentView addSubview:qualityLabel];
     
-    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 315, currentY, 100, 26)];
+    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 295, currentY, 100, 26)];
     [self.qualityPopUpButton addItemsWithTitles:@[@"Low", @"Medium", @"High"]];
     
     // Load saved quality or default to High
@@ -152,8 +152,8 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     
     [contentView addSubview:self.qualityPopUpButton];
     
-    // Image attachment area
-    currentY += 50;
+    // Image attachment area (above output controls with more separation)
+    currentY += 80;
     self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 25)];
     [self.attachImageButton setTitle:@"Attach Image"];
     [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
