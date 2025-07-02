@@ -36,7 +36,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 
 @end
 
-@interface AIMainWindowController () <NSWindowDelegate, NSTextViewDelegate>
+@interface AIMainWindowController () <NSWindowDelegate, NSTextViewDelegate, NSUserNotificationCenterDelegate>
 @property (nonatomic, strong) AIImageGenerationManager *imageGenerator;
 @property (nonatomic, strong) NSImage *pendingGeneratedImage;
 @property (nonatomic, strong) NSError *pendingGenerationError;
@@ -58,7 +58,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self = [super initWithWindow:window];
     if (self) {
         [window setTitle:@"Auto Image"];
-        [window setMinSize:NSMakeSize(480, 320)];
+        [window setMinSize:NSMakeSize(480, 340)];
         [window center];
         [window setDelegate:self];
         
@@ -79,6 +79,11 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
                                                  selector:@selector(saveCurrentState)
                                                      name:NSApplicationWillTerminateNotification
                                                    object:nil];
+        
+        // Set up notification center delegate on OS X 10.8+
+        if (NSClassFromString(@"NSUserNotificationCenter") != nil) {
+            [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
+        }
     }
     return self;
 }
@@ -102,7 +107,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [contentView addSubview:self.generateButton];
     
     // Progress indicator (next to generate button)
-    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 6, 300, 20)];
+    self.progressIndicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(margin + 140, currentY + 7, 300, 20)];
     [self.progressIndicator setStyle:NSProgressIndicatorBarStyle];
     [self.progressIndicator setIndeterminate:YES];
     [self.progressIndicator setHidden:YES];
@@ -267,11 +272,6 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self.pendingGenerationError = nil;
     self.isGenerating = YES;
     
-    // Start generation immediately in background
-    [self.generateButton setEnabled:NO];
-    [self.progressIndicator setHidden:NO];
-    [self.progressIndicator startAnimation:nil];
-    
     // Get actual size based on selection
     NSString *sizeTitle = [[self.sizePopUpButton selectedItem] title];
     NSString *size;
@@ -317,6 +317,11 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [savePanel setAllowedFileTypes:@[@"png"]];
     [savePanel setNameFieldStringValue:@"generated_image.png"];
     
+    // Start generation immediately in background
+    [self.generateButton setEnabled:NO];
+    [self.progressIndicator startAnimation:nil];
+    [self.progressIndicator setHidden:NO];
+    
     [savePanel beginSheetModalForWindow:[self window] completionHandler:^(NSInteger result) {
         if (result == NSFileHandlingPanelOKButton) {
             NSURL *saveURL = [savePanel URL];
@@ -350,12 +355,40 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         NSData *pngData = [imageRep representationUsingType:NSPNGFileType properties:@{}];
         [pngData writeToURL:saveURL atomically:YES];
         
-        // Show success
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Image Generated Successfully"];
-        [alert setInformativeText:[NSString stringWithFormat:@"Image saved to: %@", [saveURL path]]];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
+        // Check if app is in foreground
+        BOOL appIsActive = [[NSApplication sharedApplication] isActive];
+        
+        if (appIsActive) {
+            // App is in foreground, just reveal in Finder
+            [[NSWorkspace sharedWorkspace] selectFile:[saveURL path] inFileViewerRootedAtPath:nil];
+        } else if (NSClassFromString(@"NSUserNotification") != nil) {
+            // App is in background and OS supports notifications
+            NSUserNotification *notification = [[NSUserNotification alloc] init];
+            notification.title = @"Image Generated Successfully";
+            notification.informativeText = @"Click to reveal in Finder";
+            
+            // Set the image as the content image if supported
+            if ([notification respondsToSelector:@selector(setContentImage:)]) {
+                // Scale down the image for notification display
+                NSSize thumbnailSize = NSMakeSize(64, 64);
+                NSImage *thumbnail = [[NSImage alloc] initWithSize:thumbnailSize];
+                [thumbnail lockFocus];
+                [self.pendingGeneratedImage drawInRect:NSMakeRect(0, 0, thumbnailSize.width, thumbnailSize.height)
+                                               fromRect:NSZeroRect
+                                              operation:NSCompositeSourceOver
+                                               fraction:1.0];
+                [thumbnail unlockFocus];
+                [notification setValue:thumbnail forKey:@"contentImage"];
+            }
+            
+            // Store the file path for reveal action
+            notification.userInfo = @{@"filePath": [saveURL path]};
+            
+            [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification];
+        } else {
+            // Older OS without notification support - reveal in Finder
+            [[NSWorkspace sharedWorkspace] selectFile:[saveURL path] inFileViewerRootedAtPath:nil];
+        }
     }
     
     // Clear pending results
@@ -455,6 +488,24 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+#pragma mark - NSUserNotificationCenterDelegate
+
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification {
+    // Reveal the saved image in Finder when notification is clicked
+    NSString *filePath = notification.userInfo[@"filePath"];
+    if (filePath) {
+        [[NSWorkspace sharedWorkspace] selectFile:filePath inFileViewerRootedAtPath:nil];
+    }
+    
+    // Remove the notification after clicking
+    [center removeDeliveredNotification:notification];
+}
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
+    // Don't show notifications when app is in foreground (we reveal in Finder instead)
+    return NO;
 }
 
 #pragma mark - Drag and Drop
