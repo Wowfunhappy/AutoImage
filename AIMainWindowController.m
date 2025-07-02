@@ -1,7 +1,10 @@
 #import "AIMainWindowController.h"
 #import "AIImageGenerationManager.h"
 
-@interface AIMainWindowController ()
+static NSString *const kAILastPrompt = @"AILastPrompt";
+static NSString *const kAILastOutputSize = @"AILastOutputSize";
+
+@interface AIMainWindowController () <NSWindowDelegate, NSTextViewDelegate>
 @property (nonatomic, strong) AIImageGenerationManager *imageGenerator;
 @property (nonatomic, strong) NSButton *removeImageButton;
 @end
@@ -22,9 +25,16 @@
     if (self) {
         [window setTitle:@"AutoImage"];
         [window center];
+        [window setDelegate:self];
         [self setupUI];
         
         self.imageGenerator = [[AIImageGenerationManager alloc] init];
+        
+        // Register for app termination notification
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(saveCurrentState)
+                                                     name:NSApplicationWillTerminateNotification
+                                                   object:nil];
     }
     return self;
 }
@@ -65,7 +75,15 @@
     
     self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 110, currentY, 200, 26)];
     [self.sizePopUpButton addItemsWithTitles:@[@"1024x1024", @"1024x1536", @"1536x1024"]];
-    [self.sizePopUpButton selectItemWithTitle:@"1024x1536"];
+    
+    // Load saved size or default to 1024x1536
+    NSString *savedSize = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastOutputSize];
+    if (savedSize && [[self.sizePopUpButton itemTitles] containsObject:savedSize]) {
+        [self.sizePopUpButton selectItemWithTitle:savedSize];
+    } else {
+        [self.sizePopUpButton selectItemWithTitle:@"1024x1536"];
+    }
+    
     [contentView addSubview:self.sizePopUpButton];
     
     // Image attachment area
@@ -105,9 +123,16 @@
     [self.promptTextView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [self.promptTextView setRichText:NO];
     [self.promptTextView setFont:[NSFont systemFontOfSize:13]];
+    [self.promptTextView setDelegate:self];
     
     [scrollView setDocumentView:self.promptTextView];
     [contentView addSubview:scrollView];
+    
+    // Load saved prompt
+    NSString *savedPrompt = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastPrompt];
+    if (savedPrompt) {
+        [self.promptTextView setString:savedPrompt];
+    }
 }
 
 - (void)attachImage:(id)sender {
@@ -142,6 +167,10 @@
         [alert runModal];
         return;
     }
+    
+    // Save size for next run (prompt is saved automatically)
+    [[NSUserDefaults standardUserDefaults] setObject:[[self.sizePopUpButton selectedItem] title] forKey:kAILastOutputSize];
+    [[NSUserDefaults standardUserDefaults] synchronize];
     
     // Show save panel immediately
     NSSavePanel *savePanel = [NSSavePanel savePanel];
@@ -196,6 +225,44 @@
 - (void)clearDocument {
     [self.promptTextView setString:@""];
     [self removeImage:nil];
+    
+    // Clear saved prompt as well
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:kAILastPrompt];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+#pragma mark - State Saving
+
+- (void)saveCurrentState {
+    NSString *currentPrompt = [[self.promptTextView string] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([currentPrompt length] > 0) {
+        [[NSUserDefaults standardUserDefaults] setObject:currentPrompt forKey:kAILastPrompt];
+    }
+    
+    NSString *currentSize = [[self.sizePopUpButton selectedItem] title];
+    if (currentSize) {
+        [[NSUserDefaults standardUserDefaults] setObject:currentSize forKey:kAILastOutputSize];
+    }
+    
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+#pragma mark - NSWindowDelegate
+
+- (void)windowWillClose:(NSNotification *)notification {
+    [self saveCurrentState];
+}
+
+#pragma mark - NSTextViewDelegate
+
+- (void)textDidChange:(NSNotification *)notification {
+    // Optionally save on every text change (with debouncing)
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(saveCurrentState) object:nil];
+    [self performSelector:@selector(saveCurrentState) withObject:nil afterDelay:1.0];
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 @end
