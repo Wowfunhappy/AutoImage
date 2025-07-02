@@ -10,6 +10,7 @@
 @property (nonatomic, strong) NSPopUpButton *qualityPopUpButton;
 @property (nonatomic, strong) NSButton *generateButton;
 @property (nonatomic, strong) NSProgressIndicator *progressIndicator;
+@property (nonatomic, strong) NSButton *drawerToggleButton;
 @property (nonatomic, strong) NSImage *attachedImage;
 
 - (void)clearDocument;

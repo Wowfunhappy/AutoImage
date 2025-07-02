@@ -178,6 +178,17 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.progressIndicator setAutoresizingMask:NSViewWidthSizable];
     [contentView addSubview:self.progressIndicator];
     
+    // Drawer toggle button (bottom right corner)
+    self.drawerToggleButton = [[NSButton alloc] initWithFrame:NSMakeRect(windowWidth - margin - 38, currentY, 38, 32)];
+    [self.drawerToggleButton setTitle:@""];
+    [self.drawerToggleButton setBezelStyle:NSRoundedBezelStyle];
+    [self.drawerToggleButton setImage:[NSImage imageNamed:NSImageNameActionTemplate]];
+    [self.drawerToggleButton setTarget:self];
+    [self.drawerToggleButton setAction:@selector(toggleOptionsDrawer:)];
+    [self.drawerToggleButton setAutoresizingMask:NSViewMinXMargin];
+    [self.drawerToggleButton setToolTip:@"Show/Hide Options"];
+    [contentView addSubview:self.drawerToggleButton];
+    
     // Prompt text view with scroll view (fill remaining space)
     currentY += 50;
     CGFloat textViewHeight = NSHeight([contentView bounds]) - currentY - margin;
@@ -430,6 +441,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             self.isGenerating = NO;
             [self.progressIndicator stopAnimation:nil];
             [self.progressIndicator setHidden:YES];
+            [self.drawerToggleButton setHidden:NO];
             [self.generateButton setEnabled:YES];
             
             // Store the results
@@ -441,12 +453,13 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     // Show save panel while generation happens in background
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     [savePanel setAllowedFileTypes:@[@"png"]];
-    [savePanel setNameFieldStringValue:@"generated_image.png"];
+    [savePanel setNameFieldStringValue:@"Generated image.png"];
     
     // Start generation immediately in background
     [self.generateButton setEnabled:NO];
     [self.progressIndicator startAnimation:nil];
     [self.progressIndicator setHidden:NO];
+    [self.drawerToggleButton setHidden:YES];
     
     [savePanel beginSheetModalForWindow:[self window] completionHandler:^(NSInteger result) {
         if (result == NSFileHandlingPanelOKButton) {
@@ -468,6 +481,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             self.isGenerating = NO;
             [self.progressIndicator stopAnimation:nil];
             [self.progressIndicator setHidden:YES];
+            [self.drawerToggleButton setHidden:NO];
             [self.generateButton setEnabled:YES];
         }
     }];
