@@ -38,12 +38,15 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 
 @interface AIMainWindowController () <NSWindowDelegate, NSTextViewDelegate>
 @property (nonatomic, strong) AIImageGenerationManager *imageGenerator;
+@property (nonatomic, strong) NSImage *pendingGeneratedImage;
+@property (nonatomic, strong) NSError *pendingGenerationError;
+@property (nonatomic) BOOL isGenerating;
 @end
 
 @implementation AIMainWindowController
 
 - (id)init {
-    NSRect windowRect = NSMakeRect(0, 0, 600, 500);
+    NSRect windowRect = NSMakeRect(0, 0, 480, 522);
     NSWindow *window = [[NSWindow alloc] initWithContentRect:windowRect
                                                    styleMask:(NSTitledWindowMask |
                                                             NSClosableWindowMask |
@@ -55,6 +58,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self = [super initWithWindow:window];
     if (self) {
         [window setTitle:@"Auto Image"];
+        [window setMinSize:NSMakeSize(480, 320)];
         [window center];
         [window setDelegate:self];
         
@@ -153,15 +157,15 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [contentView addSubview:self.qualityPopUpButton];
     
     // Image attachment area (above output controls with more separation)
-    currentY += 80;
-    self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY, 120, 25)];
+    currentY += 100;
+    self.attachImageButton = [[NSButton alloc] initWithFrame:NSMakeRect(margin, currentY + 33, 120, 25)];
     [self.attachImageButton setTitle:@"Attach Image"];
     [self.attachImageButton setBezelStyle:NSRoundedBezelStyle];
     [self.attachImageButton setTarget:self];
     [self.attachImageButton setAction:@selector(toggleImageAttachment:)];
     [contentView addSubview:self.attachImageButton];
     
-    self.attachedImageView = [[AIDragDropImageView alloc] initWithFrame:NSMakeRect(margin + 140, currentY - 17, 60, 60)];
+    self.attachedImageView = [[AIDragDropImageView alloc] initWithFrame:NSMakeRect(margin + 140, currentY, 60, 60)];
     [self.attachedImageView setImageFrameStyle:NSImageFrameGrayBezel];
     [self.attachedImageView setImageScaling:NSImageScaleProportionallyUpOrDown];
     [self.attachedImageView registerForDraggedTypes:@[NSFilenamesPboardType, NSTIFFPboardType, NSPasteboardTypePNG]];
@@ -258,7 +262,57 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [[NSUserDefaults standardUserDefaults] setObject:[[self.qualityPopUpButton selectedItem] title] forKey:kAILastQuality];
     [[NSUserDefaults standardUserDefaults] synchronize];
     
-    // Show save panel immediately
+    // Clear any pending results
+    self.pendingGeneratedImage = nil;
+    self.pendingGenerationError = nil;
+    self.isGenerating = YES;
+    
+    // Start generation immediately in background
+    [self.generateButton setEnabled:NO];
+    [self.progressIndicator setHidden:NO];
+    [self.progressIndicator startAnimation:nil];
+    
+    // Get actual size based on selection
+    NSString *sizeTitle = [[self.sizePopUpButton selectedItem] title];
+    NSString *size;
+    if ([sizeTitle isEqualToString:@"Square"]) {
+        size = @"1024x1024";
+    } else if ([sizeTitle isEqualToString:@"Portrait"]) {
+        size = @"1024x1536";
+    } else { // Landscape
+        size = @"1536x1024";
+    }
+    
+    // Get quality
+    NSString *qualityTitle = [[self.qualityPopUpButton selectedItem] title];
+    NSString *quality;
+    if ([qualityTitle isEqualToString:@"Low"]) {
+        quality = @"low";
+    } else if ([qualityTitle isEqualToString:@"Medium"]) {
+        quality = @"medium";
+    } else { // High
+        quality = @"high";
+    }
+    
+    // Start generation in background
+    [self.imageGenerator generateImageWithPrompt:prompt
+                                           size:size
+                                        quality:quality
+                                  attachedImage:self.attachedImage
+                              completionHandler:^(NSImage *image, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.isGenerating = NO;
+            [self.progressIndicator stopAnimation:nil];
+            [self.progressIndicator setHidden:YES];
+            [self.generateButton setEnabled:YES];
+            
+            // Store the results
+            self.pendingGeneratedImage = image;
+            self.pendingGenerationError = error;
+        });
+    }];
+    
+    // Show save panel while generation happens in background
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     [savePanel setAllowedFileTypes:@[@"png"]];
     [savePanel setNameFieldStringValue:@"generated_image.png"];
@@ -267,66 +321,59 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         if (result == NSFileHandlingPanelOKButton) {
             NSURL *saveURL = [savePanel URL];
             
-            // Start generation
-            [self.generateButton setEnabled:NO];
-            [self.progressIndicator setHidden:NO];
-            [self.progressIndicator startAnimation:nil];
-            
-            // Get actual size based on selection
-            NSString *sizeTitle = [[self.sizePopUpButton selectedItem] title];
-            NSString *size;
-            if ([sizeTitle isEqualToString:@"Square"]) {
-                size = @"1024x1024";
-            } else if ([sizeTitle isEqualToString:@"Portrait"]) {
-                size = @"1024x1536";
-            } else { // Landscape
-                size = @"1536x1024";
+            // Check if generation is complete
+            if (!self.isGenerating) {
+                // Generation complete, save immediately
+                [self saveGeneratedImageToURL:saveURL];
+            } else {
+                // Still generating, wait for completion
+                [self waitForGenerationAndSaveToURL:saveURL];
             }
-            
-            // Get quality
-            NSString *qualityTitle = [[self.qualityPopUpButton selectedItem] title];
-            NSString *quality;
-            if ([qualityTitle isEqualToString:@"Low"]) {
-                quality = @"low";
-            } else if ([qualityTitle isEqualToString:@"Medium"]) {
-                quality = @"medium";
-            } else { // High
-                quality = @"high";
-            }
-            
-            [self.imageGenerator generateImageWithPrompt:prompt
-                                                   size:size
-                                                quality:quality
-                                           attachedImage:self.attachedImage
-                                       completionHandler:^(NSImage *image, NSError *error) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self.progressIndicator stopAnimation:nil];
-                    [self.progressIndicator setHidden:YES];
-                    [self.generateButton setEnabled:YES];
-                    
-                    if (error) {
-                        NSAlert *alert = [[NSAlert alloc] init];
-                        [alert setMessageText:@"Image Generation Failed"];
-                        [alert setInformativeText:[error localizedDescription]];
-                        [alert addButtonWithTitle:@"OK"];
-                        [alert runModal];
-                    } else if (image) {
-                        // Save the image
-                        NSBitmapImageRep *imageRep = [NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]];
-                        NSData *pngData = [imageRep representationUsingType:NSPNGFileType properties:@{}];
-                        [pngData writeToURL:saveURL atomically:YES];
-                        
-                        // Show success
-                        NSAlert *alert = [[NSAlert alloc] init];
-                        [alert setMessageText:@"Image Generated Successfully"];
-                        [alert setInformativeText:[NSString stringWithFormat:@"Image saved to: %@", [saveURL path]]];
-                        [alert addButtonWithTitle:@"OK"];
-                        [alert runModal];
-                    }
-                });
-            }];
+        } else {
+            // User cancelled save dialog
+            self.pendingGeneratedImage = nil;
+            self.pendingGenerationError = nil;
         }
     }];
+}
+
+- (void)saveGeneratedImageToURL:(NSURL *)saveURL {
+    if (self.pendingGenerationError) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Image Generation Failed"];
+        [alert setInformativeText:[self.pendingGenerationError localizedDescription]];
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+    } else if (self.pendingGeneratedImage) {
+        // Save the image
+        NSBitmapImageRep *imageRep = [NSBitmapImageRep imageRepWithData:[self.pendingGeneratedImage TIFFRepresentation]];
+        NSData *pngData = [imageRep representationUsingType:NSPNGFileType properties:@{}];
+        [pngData writeToURL:saveURL atomically:YES];
+        
+        // Show success
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Image Generated Successfully"];
+        [alert setInformativeText:[NSString stringWithFormat:@"Image saved to: %@", [saveURL path]]];
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+    }
+    
+    // Clear pending results
+    self.pendingGeneratedImage = nil;
+    self.pendingGenerationError = nil;
+}
+
+- (void)waitForGenerationAndSaveToURL:(NSURL *)saveURL {
+    // Just wait in background and save when ready - no UI blocking
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        while (self.isGenerating) {
+            [NSThread sleepForTimeInterval:0.1];
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self saveGeneratedImageToURL:saveURL];
+        });
+    });
 }
 
 - (void)clearDocument {
