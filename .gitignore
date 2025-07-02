@@ -1,0 +1,5 @@
+*.o
+*.app/**
+Info.plist
+-
+.claude
