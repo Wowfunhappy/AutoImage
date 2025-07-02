@@ -67,7 +67,6 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self = [super initWithWindow:window];
     if (self) {
         [window setTitle:@"Auto Image"];
-        [window setMinSize:NSMakeSize(200, 200)];
         [window center];
         [window setDelegate:self];
         
@@ -327,6 +326,20 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         return;
     }
     
+    // Check for API key first
+    if (![self.imageGenerator hasAPIKey]) {
+        [self.imageGenerator promptForAPIKeyWithCompletionHandler:^(NSString *apiKey) {
+            if (apiKey && [apiKey length] > 0) {
+                // Save the API key first
+                [self.imageGenerator saveAPIKeyToKeychain:apiKey];
+                // API key was entered, continue with generation
+                [self generateImage:sender];
+            }
+            // If cancelled, do nothing
+        }];
+        return;
+    }
+    
     // Save size and quality for next run (prompt is saved automatically)
     [[NSUserDefaults standardUserDefaults] setObject:[[self.sizePopUpButton selectedItem] title] forKey:kAILastOutputSize];
     [[NSUserDefaults standardUserDefaults] setObject:[[self.qualityPopUpButton selectedItem] title] forKey:kAILastQuality];
@@ -400,9 +413,14 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
                 [self waitForGenerationAndSaveToURL:saveURL];
             }
         } else {
-            // User cancelled save dialog
+            // User cancelled save dialog - cancel the generation
+            [self.imageGenerator cancelGeneration];
             self.pendingGeneratedImage = nil;
             self.pendingGenerationError = nil;
+            self.isGenerating = NO;
+            [self.progressIndicator stopAnimation:nil];
+            [self.progressIndicator setHidden:YES];
+            [self.generateButton setEnabled:YES];
         }
     }];
 }

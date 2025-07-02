@@ -14,6 +14,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 @property (nonatomic) NSInteger retryCount;
 @property (nonatomic) NSInteger maxRetries;
 @property (nonatomic, strong) NSURLRequest *currentRequest;
+@property (nonatomic, strong) NSURLConnection *currentConnection;
 @end
 
 @implementation AIImageGenerationManager
@@ -133,9 +134,9 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 
 - (void)sendRequest {
     self.responseData = [NSMutableData data];
-    NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:self.currentRequest delegate:self startImmediately:YES];
+    self.currentConnection = [[NSURLConnection alloc] initWithRequest:self.currentRequest delegate:self startImmediately:YES];
     
-    if (!connection) {
+    if (!self.currentConnection) {
         NSError *error = [NSError errorWithDomain:@"AIImageGeneration" 
                                             code:500 
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection"}];
@@ -182,6 +183,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
             
             if (image) {
                 self.completionHandler(image, nil);
+                self.currentConnection = nil;
             } else {
                 NSError *error = [NSError errorWithDomain:@"AIImageGeneration" 
                                                     code:500 
@@ -222,6 +224,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
                                                  code:error.code 
                                              userInfo:@{NSLocalizedDescriptionKey: errorMessage}];
         self.completionHandler(nil, finalError);
+        self.currentConnection = nil;
     }
 }
 
@@ -252,6 +255,85 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
     }
     
     return nil;
+}
+
+- (BOOL)hasAPIKey {
+    NSString *apiKey = [self loadAPIKeyFromKeychain];
+    return (apiKey && [apiKey length] > 0);
+}
+
+- (void)cancelGeneration {
+    if (self.currentConnection) {
+        [self.currentConnection cancel];
+        self.currentConnection = nil;
+        self.completionHandler = nil;
+        self.responseData = nil;
+    }
+}
+
+- (void)promptForAPIKeyWithCompletionHandler:(void (^)(NSString *apiKey))completionHandler {
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"Enter OpenAI API Key"];
+    [alert setInformativeText:@"Please enter your OpenAI API key to generate images:"];
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Cancel"];
+    
+    NSTextField *textField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 420, 24)];
+    [[textField cell] setPlaceholderString:@"sk-..."];
+    [alert setAccessoryView:textField];
+    
+    // Get reference to OK button and disable it
+    NSArray *buttons = [alert buttons];
+    NSButton *okButton = [buttons objectAtIndex:0];
+    [okButton setEnabled:NO];
+    
+    // Monitor text changes to enable/disable OK button
+    [[NSNotificationCenter defaultCenter] addObserverForName:NSControlTextDidChangeNotification
+                                                      object:textField
+                                                       queue:[NSOperationQueue mainQueue]
+                                                  usingBlock:^(NSNotification *note) {
+        NSString *text = [textField stringValue];
+        [okButton setEnabled:([text length] > 0)];
+    }];
+    
+    NSInteger result = [alert runModal];
+    
+    if (result == NSAlertFirstButtonReturn) {
+        NSString *apiKey = [textField stringValue];
+        completionHandler(apiKey);
+    } else {
+        completionHandler(nil);
+    }
+}
+
+- (void)saveAPIKeyToKeychain:(NSString *)apiKey {
+    NSData *apiKeyData = [apiKey dataUsingEncoding:NSUTF8StringEncoding];
+    
+    // First try to update existing item
+    NSDictionary *query = @{
+        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService: kAIKeychainService,
+        (__bridge id)kSecAttrAccount: kAIKeychainAccount
+    };
+    
+    NSDictionary *attributesToUpdate = @{
+        (__bridge id)kSecValueData: apiKeyData
+    };
+    
+    OSStatus status = SecItemUpdate((__bridge CFDictionaryRef)query,
+                                   (__bridge CFDictionaryRef)attributesToUpdate);
+    
+    if (status == errSecItemNotFound) {
+        // Item doesn't exist, add it
+        NSMutableDictionary *newItem = [query mutableCopy];
+        [newItem setObject:apiKeyData forKey:(__bridge id)kSecValueData];
+        
+        status = SecItemAdd((__bridge CFDictionaryRef)newItem, NULL);
+    }
+    
+    if (status != errSecSuccess) {
+        NSLog(@"Error saving API key to keychain: %d", (int)status);
+    }
 }
 
 @end

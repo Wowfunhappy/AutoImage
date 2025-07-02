@@ -193,10 +193,6 @@
     [self.mainWindowController toggleOptionsDrawer:sender];
 }
 
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
-    return YES;
-}
-
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
     if ([menuItem tag] == 100) { // Attach Image menu item
         if (self.mainWindowController.attachedImage) {

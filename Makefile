@@ -3,7 +3,7 @@
 
 CC = clang
 OBJC = clang
-CFLAGS = -fobjc-arc -Wall -mmacosx-version-min=10.9
+CFLAGS = -fobjc-arc -Wall -mmacosx-version-min=10.6
 LDFLAGS = -framework Cocoa -framework Foundation -framework Security
 
 TARGET = AutoImage.app

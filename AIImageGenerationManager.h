@@ -11,4 +11,9 @@ typedef void (^AIImageGenerationCompletionHandler)(NSImage *image, NSError *erro
                   attachedImage:(NSImage *)attachedImage
               completionHandler:(AIImageGenerationCompletionHandler)completionHandler;
 
+- (BOOL)hasAPIKey;
+- (void)promptForAPIKeyWithCompletionHandler:(void (^)(NSString *apiKey))completionHandler;
+- (void)saveAPIKeyToKeychain:(NSString *)apiKey;
+- (void)cancelGeneration;
+
 @end
