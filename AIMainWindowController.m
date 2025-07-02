@@ -488,7 +488,13 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 }
 
 - (void)clearDocument {
-    [self.promptTextView setString:@""];
+    // Use replaceCharactersInRange to properly register with undo manager
+    NSRange fullRange = NSMakeRange(0, [[self.promptTextView string] length]);
+    if ([self.promptTextView shouldChangeTextInRange:fullRange replacementString:@""]) {
+        [[self.promptTextView textStorage] replaceCharactersInRange:fullRange withString:@""];
+        [self.promptTextView didChangeText];
+    }
+    
     [self removeImage:nil];
     
     // Clear saved prompt as well
