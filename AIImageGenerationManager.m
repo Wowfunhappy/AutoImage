@@ -57,7 +57,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
         @"prompt": prompt,
         @"n": @1,
         @"size": size,
-        @"quality": @"low",
+        @"quality": @"high",
         @"moderation": moderation
     } mutableCopy];
     
