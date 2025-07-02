@@ -44,16 +44,12 @@
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
     [fileMenuItem setSubmenu:fileMenu];
     
-    NSMenuItem *newItem = [fileMenu addItemWithTitle:@"New" action:@selector(newDocument:) keyEquivalent:@"n"];
-    [newItem setTarget:self];
-    
-    [fileMenu addItem:[NSMenuItem separatorItem]];
+    NSMenuItem *clearItem = [fileMenu addItemWithTitle:@"Clear" action:@selector(newDocument:) keyEquivalent:@""];
+    [clearItem setTarget:self];
     
     NSMenuItem *attachImageItem = [fileMenu addItemWithTitle:@"Attach Image…" action:@selector(attachImage:) keyEquivalent:@""];
     [attachImageItem setTarget:self];
     [attachImageItem setTag:100]; // Tag to identify this menu item
-    
-    [fileMenu addItem:[NSMenuItem separatorItem]];
     
     NSMenuItem *generateItem = [fileMenu addItemWithTitle:@"Generate" action:@selector(generateImage:) keyEquivalent:@"g"];
     [generateItem setTarget:self];
