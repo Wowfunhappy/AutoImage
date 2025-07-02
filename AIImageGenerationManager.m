@@ -15,6 +15,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 @property (nonatomic) NSInteger maxRetries;
 @property (nonatomic, strong) NSURLRequest *currentRequest;
 @property (nonatomic, strong) NSURLConnection *currentConnection;
+@property (nonatomic, strong) NSString *cachedAPIKey;
 @end
 
 @implementation AIImageGenerationManager
@@ -36,8 +37,9 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
     self.completionHandler = completionHandler;
     self.retryCount = 0;
     
-    // Get API key
-    NSString *apiKey = [self loadAPIKeyFromKeychain];
+    // Get API key (use cached value if available from hasAPIKey check)
+    NSString *apiKey = self.cachedAPIKey ? self.cachedAPIKey : [self loadAPIKeyFromKeychain];
+    self.cachedAPIKey = nil; // Clear cache after use
     if (!apiKey || [apiKey length] == 0) {
         NSError *error = [NSError errorWithDomain:@"AIImageGeneration" 
                                             code:401 
@@ -258,8 +260,9 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 }
 
 - (BOOL)hasAPIKey {
-    NSString *apiKey = [self loadAPIKeyFromKeychain];
-    return (apiKey && [apiKey length] > 0);
+    // Cache the API key to avoid double keychain access
+    self.cachedAPIKey = [self loadAPIKeyFromKeychain];
+    return (self.cachedAPIKey && [self.cachedAPIKey length] > 0);
 }
 
 - (void)cancelGeneration {

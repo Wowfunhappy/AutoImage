@@ -6,7 +6,7 @@ OBJC = clang
 CFLAGS = -fobjc-arc -Wall -mmacosx-version-min=10.6
 LDFLAGS = -framework Cocoa -framework Foundation -framework Security
 
-TARGET = AutoImage.app
+TARGET = Auto\ Image.app
 EXECUTABLE = $(TARGET)/Contents/MacOS/AutoImage
 BUNDLE_IDENTIFIER = com.autoimage.AutoImage
 
@@ -27,12 +27,13 @@ $(TARGET): $(EXECUTABLE) Info.plist
 	@echo "Building application bundle..."
 	@mkdir -p $(TARGET)/Contents/Resources
 	@cp Info.plist $(TARGET)/Contents/
+	@cp AppIcon.icns $(TARGET)/Contents/Resources/
 	@touch $(TARGET)
 
 $(EXECUTABLE): $(OBJECTS)
 	@echo "Linking executable..."
 	@mkdir -p $(TARGET)/Contents/MacOS
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $(EXECUTABLE) $^
 
 %.o: %.m
 	@echo "Compiling $<..."
@@ -66,15 +67,17 @@ Info.plist:
 	@echo '    <string>NSApplication</string>' >> Info.plist
 	@echo '    <key>NSApplicationDelegate</key>' >> Info.plist
 	@echo '    <string>AIAppDelegate</string>' >> Info.plist
+	@echo '    <key>CFBundleIconFile</key>' >> Info.plist
+	@echo '    <string>AppIcon</string>' >> Info.plist
 	@echo '</dict>' >> Info.plist
 	@echo '</plist>' >> Info.plist
 
 clean:
 	@echo "Cleaning build files..."
-	rm -rf $(TARGET) $(OBJECTS) Info.plist
+	rm -rf Auto\ Image.app $(OBJECTS) Info.plist
 
 run: $(TARGET)
-	@echo "Running AutoImage..."
+	@echo "Running Auto Image..."
 	open $(TARGET)
 
 .PHONY: all clean run
