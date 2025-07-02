@@ -151,6 +151,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     if (savedPrompt) {
         [self.promptTextView setString:savedPrompt];
     }
+    
+    // Validate generate button state based on initial prompt
+    [self validateGenerateButton];
 }
 
 - (void)setupDrawer {
@@ -318,15 +321,6 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 - (void)generateImage:(id)sender {
     NSString *prompt = [[self.promptTextView string] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     
-    if ([prompt length] == 0) {
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Please enter a prompt"];
-        [alert setInformativeText:@"You must provide a text description for the image you want to generate."];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
-        return;
-    }
-    
     // Check for API key first
     if (![self.imageGenerator hasAPIKey]) {
         [self.imageGenerator promptForAPIKeyWithCompletionHandler:^(NSString *apiKey) {
@@ -448,7 +442,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         } else if (NSClassFromString(@"NSUserNotification") != nil) {
             // App is in background and OS supports notifications
             NSUserNotification *notification = [[NSUserNotification alloc] init];
-            notification.title = @"Image Generated Successfully";
+            notification.title = @"Image Created";
             notification.informativeText = @"Click to reveal in Finder";
             
             // Set the image as the content image if supported
@@ -500,6 +494,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     // Clear saved prompt as well
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:kAILastPrompt];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    // Update generate button state
+    [self validateGenerateButton];
 }
 
 - (void)saveAttachedImage {
@@ -589,9 +586,17 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
 #pragma mark - NSTextViewDelegate
 
 - (void)textDidChange:(NSNotification *)notification {
+    // Validate generate button
+    [self validateGenerateButton];
+    
     // Optionally save on every text change (with debouncing)
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(saveCurrentState) object:nil];
     [self performSelector:@selector(saveCurrentState) withObject:nil afterDelay:1.0];
+}
+
+- (void)validateGenerateButton {
+    NSString *prompt = [[self.promptTextView string] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    [self.generateButton setEnabled:([prompt length] > 0)];
 }
 
 - (void)dealloc {
