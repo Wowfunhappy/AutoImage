@@ -187,7 +187,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.drawerToggleButton setTarget:self];
     [self.drawerToggleButton setAction:@selector(toggleOptionsDrawer:)];
     [self.drawerToggleButton setAutoresizingMask:NSViewMinXMargin];
-    [self.drawerToggleButton setToolTip:@"Show/Hide Options"];
+    [self.drawerToggleButton setToolTip:@"Show Side Drawer"];
     [contentView addSubview:self.drawerToggleButton];
     
     // Prompt text view with scroll view (fill remaining space)
@@ -207,6 +207,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.promptTextView setFont:[NSFont systemFontOfSize:13]];
     [self.promptTextView setDelegate:self];
     [self.promptTextView setAllowsUndo:YES];
+    [self.promptTextView setToolTip:@"Describe the image you want to be created"];
     
     [scrollView setDocumentView:self.promptTextView];
     [contentView addSubview:scrollView];
@@ -291,6 +292,13 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [[self.sizePopUpButton itemAtIndex:1] setTag:1536]; // Portrait = 1024x1536
     [[self.sizePopUpButton itemAtIndex:2] setTag:1024]; // Landscape = 1536x1024
     
+    // Set initial tooltip
+    [self.sizePopUpButton setToolTip:@"1024x1024"];
+    
+    // Update tooltip when selection changes
+    [self.sizePopUpButton setTarget:self];
+    [self.sizePopUpButton setAction:@selector(sizePopUpChanged:)];
+    
     // Load saved size or default to Portrait
     NSString *savedSize = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastOutputSize];
     if (savedSize && [[self.sizePopUpButton itemTitles] containsObject:savedSize]) {
@@ -298,6 +306,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     } else {
         [self.sizePopUpButton selectItemWithTitle:@"Portrait"];
     }
+    
+    // Update tooltip to match current selection
+    [self sizePopUpChanged:nil];
     
     [drawerContent addSubview:self.sizePopUpButton];
     
@@ -313,6 +324,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     
     self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 60, currentY - 3, 140, 26)];
     [self.qualityPopUpButton addItemsWithTitles:@[@"Low", @"Medium", @"High"]];
+    [self.qualityPopUpButton setToolTip:@"High quality looks best, but costs more"];
     
     // Load saved quality or default to High
     NSString *savedQuality = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastQuality];
@@ -795,6 +807,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     if (drawerMenuItem) {
         [drawerMenuItem setTitle:@"Hide Side Drawer"];
     }
+    [self.drawerToggleButton setToolTip:@"Hide Side Drawer"];
 }
 
 - (void)drawerDidClose:(NSNotification *)notification {
@@ -802,6 +815,20 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     NSMenuItem *drawerMenuItem = [viewMenu itemWithTag:101];
     if (drawerMenuItem) {
         [drawerMenuItem setTitle:@"Show Side Drawer"];
+    }
+    [self.drawerToggleButton setToolTip:@"Show Side Drawer"];
+}
+
+#pragma mark - PopUp Button Actions
+
+- (void)sizePopUpChanged:(id)sender {
+    NSString *selectedTitle = [self.sizePopUpButton titleOfSelectedItem];
+    if ([selectedTitle isEqualToString:@"Square"]) {
+        [self.sizePopUpButton setToolTip:@"1024x1024"];
+    } else if ([selectedTitle isEqualToString:@"Portrait"]) {
+        [self.sizePopUpButton setToolTip:@"1024x1536"];
+    } else if ([selectedTitle isEqualToString:@"Landscape"]) {
+        [self.sizePopUpButton setToolTip:@"1536x1024"];
     }
 }
 
