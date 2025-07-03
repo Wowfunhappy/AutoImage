@@ -3,7 +3,7 @@
 
 CC = clang
 OBJC = clang
-CFLAGS = -fobjc-arc -Wall -mmacosx-version-min=10.6
+CFLAGS = -fobjc-arc -Wall -O2 -mmacosx-version-min=10.6
 LDFLAGS = -framework Cocoa -framework Foundation -framework Security
 
 TARGET = Auto\ Image.app
@@ -60,7 +60,7 @@ Info.plist:
 	@echo '    <key>CFBundleShortVersionString</key>' >> Info.plist
 	@echo '    <string>$(VERSION)</string>' >> Info.plist
 	@echo '    <key>LSMinimumSystemVersion</key>' >> Info.plist
-	@echo '    <string>10.9</string>' >> Info.plist
+	@echo '    <string>10.6</string>' >> Info.plist
 	@echo '    <key>NSHighResolutionCapable</key>' >> Info.plist
 	@echo '    <true/>' >> Info.plist
 	@echo '    <key>NSPrincipalClass</key>' >> Info.plist
