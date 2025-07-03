@@ -530,19 +530,10 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             // App is in background - show notification
             NSUserNotification *notification = [[NSUserNotification alloc] init];
             notification.title = @"Image Created";
-            notification.informativeText = @"Click to reveal in Finder";
+            notification.informativeText = [[saveURL path] lastPathComponent];
             
             // Set the image as the content image
-            // Scale down the image for notification display
-            NSSize thumbnailSize = NSMakeSize(64, 64);
-            NSImage *thumbnail = [[NSImage alloc] initWithSize:thumbnailSize];
-            [thumbnail lockFocus];
-            [self.pendingGeneratedImage drawInRect:NSMakeRect(0, 0, thumbnailSize.width, thumbnailSize.height)
-                                           fromRect:NSZeroRect
-                                          operation:NSCompositeSourceOver
-                                           fraction:1.0];
-            [thumbnail unlockFocus];
-            notification.contentImage = thumbnail;
+            notification.contentImage = self.pendingGeneratedImage;
             
             // Store the file path for reveal action
             notification.userInfo = @{@"filePath": [saveURL path]};
