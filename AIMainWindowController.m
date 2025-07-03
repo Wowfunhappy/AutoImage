@@ -143,10 +143,8 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
                                                      name:NSApplicationWillTerminateNotification
                                                    object:nil];
         
-        // Set up notification center delegate on OS X 10.8+
-        if (NSClassFromString(@"NSUserNotificationCenter") != nil) {
-            [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
-        }
+        // Set up notification center delegate
+        [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
         
         // Drawer notifications will be set up after drawer is created
     }
@@ -519,33 +517,28 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         if (appIsActive) {
             // App is in foreground, just reveal in Finder
             [[NSWorkspace sharedWorkspace] selectFile:[saveURL path] inFileViewerRootedAtPath:nil];
-        } else if (NSClassFromString(@"NSUserNotification") != nil) {
-            // App is in background and OS supports notifications
+        } else {
+            // App is in background - show notification
             NSUserNotification *notification = [[NSUserNotification alloc] init];
             notification.title = @"Image Created";
             notification.informativeText = @"Click to reveal in Finder";
             
-            // Set the image as the content image if supported
-            if ([notification respondsToSelector:@selector(setContentImage:)]) {
-                // Scale down the image for notification display
-                NSSize thumbnailSize = NSMakeSize(64, 64);
-                NSImage *thumbnail = [[NSImage alloc] initWithSize:thumbnailSize];
-                [thumbnail lockFocus];
-                [self.pendingGeneratedImage drawInRect:NSMakeRect(0, 0, thumbnailSize.width, thumbnailSize.height)
-                                               fromRect:NSZeroRect
-                                              operation:NSCompositeSourceOver
-                                               fraction:1.0];
-                [thumbnail unlockFocus];
-                [notification setValue:thumbnail forKey:@"contentImage"];
-            }
+            // Set the image as the content image
+            // Scale down the image for notification display
+            NSSize thumbnailSize = NSMakeSize(64, 64);
+            NSImage *thumbnail = [[NSImage alloc] initWithSize:thumbnailSize];
+            [thumbnail lockFocus];
+            [self.pendingGeneratedImage drawInRect:NSMakeRect(0, 0, thumbnailSize.width, thumbnailSize.height)
+                                           fromRect:NSZeroRect
+                                          operation:NSCompositeSourceOver
+                                           fraction:1.0];
+            [thumbnail unlockFocus];
+            notification.contentImage = thumbnail;
             
             // Store the file path for reveal action
             notification.userInfo = @{@"filePath": [saveURL path]};
             
             [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification];
-        } else {
-            // Older OS without notification support - reveal in Finder
-            [[NSWorkspace sharedWorkspace] selectFile:[saveURL path] inFileViewerRootedAtPath:nil];
         }
     }
     
