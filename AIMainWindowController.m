@@ -225,7 +225,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     self.optionsDrawer = [[NSDrawer alloc] initWithContentSize:NSMakeSize(250, 400) preferredEdge:NSMaxXEdge];
     [self.optionsDrawer setParentWindow:[self window]];
     [self.optionsDrawer setMinContentSize:NSMakeSize(250, 300)];
-    [self.optionsDrawer setMaxContentSize:NSMakeSize(300, 800)];
+    [self.optionsDrawer setMaxContentSize:NSMakeSize(250, 800)];
     
     // Create drawer content view with flipped coordinates
     AIFlippedView *drawerContent = [[AIFlippedView alloc] initWithFrame:NSMakeRect(0, 0, 250, 400)];
