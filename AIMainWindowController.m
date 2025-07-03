@@ -122,6 +122,7 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
         [window setTitle:@"Auto Image"];
         [window center];
         [window setDelegate:self];
+        [window setContentMaxSize:NSMakeSize(800, 800)];
         
         // Set custom content view for drag and drop
         AIDragDropView *contentView = [[AIDragDropView alloc] initWithFrame:[[window contentView] frame]];
