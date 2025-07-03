@@ -20,5 +20,6 @@
 - (void)generateImage:(id)sender;
 - (void)toggleOptionsDrawer:(id)sender;
 - (void)attachImageFromSource:(NSImage *)image;
+- (BOOL)isGeneratingImage;
 
 @end

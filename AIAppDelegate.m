@@ -202,12 +202,35 @@
         }
     } else if ([menuItem tag] == 101) { // Toggle drawer menu item
         // Menu title is now updated directly by drawer notifications
+    } else if ([menuItem action] == @selector(performClose:)) {
+        // Disable Close menu item during image generation
+        return ![self.mainWindowController isGeneratingImage];
     }
     return YES;
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
     return YES;
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    if ([self.mainWindowController isGeneratingImage]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Image Generation in Progress"];
+        [alert setInformativeText:@"An image is currently being created. Do you want to cancel image creation and quit Auto Image?"];
+        [alert addButtonWithTitle:@"Cancel and Quit"];
+        [alert addButtonWithTitle:@"Continue Generating"];
+        
+        NSModalResponse response = [alert runModal];
+        if (response == NSAlertFirstButtonReturn) {
+            // User chose to quit - cancel generation first
+            return NSTerminateNow;
+        } else {
+            // User chose to continue
+            return NSTerminateCancel;
+        }
+    }
+    return NSTerminateNow;
 }
 
 @end

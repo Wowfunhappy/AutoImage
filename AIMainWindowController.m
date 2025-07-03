@@ -455,6 +455,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             [self.drawerToggleButton setHidden:NO];
             [self.generateButton setEnabled:YES];
             
+            // Re-enable window close button
+            [[self window] setStyleMask:[[self window] styleMask] | NSClosableWindowMask];
+            
             // Store the results
             self.pendingGeneratedImage = image;
             self.pendingGenerationError = error;
@@ -471,6 +474,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [self.progressIndicator startAnimation:nil];
     [self.progressIndicator setHidden:NO];
     [self.drawerToggleButton setHidden:YES];
+    
+    // Disable window close button during generation
+    [[self window] setStyleMask:[[self window] styleMask] & ~NSClosableWindowMask];
     
     [savePanel beginSheetModalForWindow:[self window] completionHandler:^(NSInteger result) {
         if (result == NSFileHandlingPanelOKButton) {
@@ -494,6 +500,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
             [self.progressIndicator setHidden:YES];
             [self.drawerToggleButton setHidden:NO];
             [self.generateButton setEnabled:YES];
+            
+            // Re-enable window close button
+            [[self window] setStyleMask:[[self window] styleMask] | NSClosableWindowMask];
         }
     }];
 }
@@ -823,6 +832,10 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     } else if ([selectedTitle isEqualToString:@"Landscape"]) {
         [self.sizePopUpButton setToolTip:@"1536x1024"];
     }
+}
+
+- (BOOL)isGeneratingImage {
+    return self.isGenerating;
 }
 
 @end
