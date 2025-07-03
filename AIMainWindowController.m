@@ -467,7 +467,51 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     // Show save panel while generation happens in background
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     [savePanel setAllowedFileTypes:@[@"png"]];
-    [savePanel setNameFieldStringValue:@"Generated image.png"];
+    
+    // Generate unique filename if default already exists
+    NSString *baseFilename = @"Generated image";
+    NSString *extension = @"png";
+    NSString *filename = [NSString stringWithFormat:@"%@.%@", baseFilename, extension];
+    
+    // Get the default directory (Desktop or Documents)
+    NSURL *defaultDirectory = [savePanel directoryURL];
+    if (!defaultDirectory) {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES);
+        defaultDirectory = [NSURL fileURLWithPath:[paths firstObject]];
+    }
+    
+    // Check if file exists and find unique name
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSURL *testURL = [defaultDirectory URLByAppendingPathComponent:filename];
+    
+    if ([fileManager fileExistsAtPath:[testURL path]]) {
+        NSInteger counter = 2;
+        
+        // Check if filename already ends with a number
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^(.+) (\\d+)$" 
+                                                                               options:0 
+                                                                                 error:nil];
+        NSTextCheckingResult *match = [regex firstMatchInString:baseFilename 
+                                                        options:0 
+                                                          range:NSMakeRange(0, [baseFilename length])];
+        
+        if (match) {
+            // Extract base name and current number
+            NSString *basePart = [baseFilename substringWithRange:[match rangeAtIndex:1]];
+            NSString *numberPart = [baseFilename substringWithRange:[match rangeAtIndex:2]];
+            baseFilename = basePart;
+            counter = [numberPart integerValue] + 1;
+        }
+        
+        // Find next available filename
+        do {
+            filename = [NSString stringWithFormat:@"%@ %ld.%@", baseFilename, (long)counter, extension];
+            testURL = [defaultDirectory URLByAppendingPathComponent:filename];
+            counter++;
+        } while ([fileManager fileExistsAtPath:[testURL path]]);
+    }
+    
+    [savePanel setNameFieldStringValue:filename];
     
     // Start generation immediately in background
     [self.generateButton setEnabled:NO];
