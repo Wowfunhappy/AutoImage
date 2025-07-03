@@ -220,8 +220,7 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
         });
     } else {
         // Max retries reached
-        NSString *errorMessage = [NSString stringWithFormat:@"Failed after %ld attempts: %@", 
-                                 (long)self.maxRetries, error.localizedDescription];
+        NSString *errorMessage = [NSString stringWithFormat:@"%@", error.localizedDescription];
         NSError *finalError = [NSError errorWithDomain:@"AIImageGeneration" 
                                                  code:error.code 
                                              userInfo:@{NSLocalizedDescriptionKey: errorMessage}];
