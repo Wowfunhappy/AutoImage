@@ -656,6 +656,27 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     }
 }
 
+- (void)windowWillMiniaturize:(NSNotification *)notification {
+    // Remember if drawer was open before minimizing
+    self.drawerWasOpenBeforeMinimize = ([self.optionsDrawer state] == NSDrawerOpenState);
+    
+    // Close the drawer if it's open (required for re-open animation to work)
+    if (self.drawerWasOpenBeforeMinimize) {
+        [self.optionsDrawer close];
+    }
+}
+
+- (void)windowDidDeminiaturize:(NSNotification *)notification {
+    // Restore drawer if it was open before minimizing
+    if (self.drawerWasOpenBeforeMinimize) {
+        // Add a small delay to ensure window is fully deminiaturized before opening drawer
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self.optionsDrawer open];
+        });
+        self.drawerWasOpenBeforeMinimize = NO;
+    }
+}
+
 #pragma mark - NSTextViewDelegate
 
 - (void)textDidChange:(NSNotification *)notification {

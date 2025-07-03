@@ -12,6 +12,7 @@
 @property (nonatomic, strong) NSProgressIndicator *progressIndicator;
 @property (nonatomic, strong) NSButton *drawerToggleButton;
 @property (nonatomic, strong) NSImage *attachedImage;
+@property (nonatomic, assign) BOOL drawerWasOpenBeforeMinimize;
 
 - (void)clearDocument;
 - (void)attachImage:(id)sender;
