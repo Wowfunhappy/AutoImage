@@ -21,7 +21,13 @@ SOURCES = main.m \
 
 OBJECTS = $(SOURCES:.m=.o)
 
-all: $(TARGET)
+# Automator Action
+ACTION_NAME = Generate\ Image.action
+ACTION_TARGET = $(TARGET)/Contents/Library/Automator/$(ACTION_NAME)
+ACTION_SOURCES = AutomatorAction/AIGenerateImageAction.m
+ACTION_OBJECTS = $(ACTION_SOURCES:.m=.o)
+
+all: $(TARGET) $(ACTION_TARGET)
 
 $(TARGET): $(EXECUTABLE) Info.plist
 	@echo "Building application bundle..."
@@ -72,9 +78,16 @@ Info.plist:
 	@echo '</dict>' >> Info.plist
 	@echo '</plist>' >> Info.plist
 
+$(ACTION_TARGET): $(ACTION_OBJECTS) AIImageGenerationManager.o
+	@echo "Building Automator action..."
+	@mkdir -p $(TARGET)/Contents/Library/Automator
+	@mkdir -p $(ACTION_TARGET)/Contents/MacOS
+	$(CC) $(LDFLAGS) -framework Automator -bundle -o $(ACTION_TARGET)/Contents/MacOS/Generate\ Image $(ACTION_OBJECTS) AIImageGenerationManager.o
+	@sed 's/VERSION_PLACEHOLDER/$(VERSION)/g' AutomatorAction/Info-Action.plist.template > $(ACTION_TARGET)/Contents/Info.plist
+
 clean:
 	@echo "Cleaning build files..."
-	rm -rf Auto\ Image.app $(OBJECTS) Info.plist
+	rm -rf Auto\ Image.app $(OBJECTS) $(ACTION_OBJECTS) Info.plist
 
 run: $(TARGET)
 	@echo "Running Auto Image..."

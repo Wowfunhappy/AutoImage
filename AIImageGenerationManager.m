@@ -136,13 +136,25 @@ static NSString *const kAIPreferencesModeration = @"AIPreferencesModeration";
 
 - (void)sendRequest {
     self.responseData = [NSMutableData data];
-    self.currentConnection = [[NSURLConnection alloc] initWithRequest:self.currentRequest delegate:self startImmediately:YES];
+    
+    // Ensure we're on the main thread for NSURLConnection
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self sendRequest];
+        });
+        return;
+    }
+    
+    self.currentConnection = [[NSURLConnection alloc] initWithRequest:self.currentRequest delegate:self startImmediately:NO];
     
     if (!self.currentConnection) {
         NSError *error = [NSError errorWithDomain:@"AIImageGeneration" 
                                             code:500 
                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection"}];
         self.completionHandler(nil, error);
+    } else {
+        [self.currentConnection scheduleInRunLoop:[NSRunLoop mainRunLoop] forMode:NSDefaultRunLoopMode];
+        [self.currentConnection start];
     }
 }
 

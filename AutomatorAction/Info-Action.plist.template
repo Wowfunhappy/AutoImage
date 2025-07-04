@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AMAccepts</key>
+	<dict>
+		<key>Container</key>
+		<string>List</string>
+		<key>Optional</key>
+		<false/>
+		<key>Types</key>
+		<array>
+			<string>com.apple.cocoa.string</string>
+		</array>
+	</dict>
+	<key>AMApplication</key>
+	<array>
+		<string>AutoImage</string>
+	</array>
+	<key>AMCanShowSelectedItemsWhenRun</key>
+	<false/>
+	<key>AMCanShowWhenRun</key>
+	<true/>
+	<key>AMCategory</key>
+	<string>AMCategoryPhotos</string>
+	<key>AMDefaultParameters</key>
+	<dict>
+		<key>quality</key>
+		<string>High</string>
+		<key>orientation</key>
+		<string>Square</string>
+	</dict>
+	<key>AMDescription</key>
+	<dict>
+		<key>AMDNote</key>
+		<string>Generates an image from text using AI</string>
+		<key>AMDSummary</key>
+		<string>This action uses AI to create an image from the provided text</string>
+	</dict>
+	<key>AMIconName</key>
+	<string>Auto Image</string>
+	<key>AMKeywords</key>
+	<array>
+		<string>AI</string>
+		<string>Image</string>
+		<string>Generate</string>
+		<string>Create</string>
+		<string>Art</string>
+	</array>
+	<key>AMName</key>
+	<string>Generate Image</string>
+	<key>AMProvides</key>
+	<dict>
+		<key>Container</key>
+		<string>List</string>
+		<key>Types</key>
+		<array>
+			<string>public.image</string>
+			<string>com.apple.cocoa.path</string>
+		</array>
+	</dict>
+	<key>AMRequiredResources</key>
+	<array>
+		<dict>
+			<key>Display Name</key>
+			<string>AutoImage</string>
+			<key>Resource</key>
+			<string>application</string>
+			<key>Type</key>
+			<string>bundle</string>
+			<key>Version</key>
+			<string>VERSION_PLACEHOLDER</string>
+		</dict>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>Generate Image</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.autoimage.AutoImage.GenerateImage</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Generate Image</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>VERSION_PLACEHOLDER</string>
+	<key>CFBundleVersion</key>
+	<string>VERSION_PLACEHOLDER</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>NSPrincipalClass</key>
+	<string>AIGenerateImageAction</string>
+</dict>
+</plist>
