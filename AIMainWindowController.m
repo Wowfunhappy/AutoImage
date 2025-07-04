@@ -274,15 +274,15 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     
     currentY += 32;
     
-    // Size selection
-    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 50, 20)];
-    [sizeLabel setStringValue:@"Size:"];
+    // Orientation selection
+    NSTextField *sizeLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(margin, currentY, 75, 20)];
+    [sizeLabel setStringValue:@"Orientation:"];
     [sizeLabel setBordered:NO];
     [sizeLabel setEditable:NO];
     [sizeLabel setBackgroundColor:[NSColor clearColor]];
     [drawerContent addSubview:sizeLabel];
     
-    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 60, currentY - 3, 140, 26)];
+    self.sizePopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 85, currentY - 3, 115, 26)];
     [self.sizePopUpButton addItemsWithTitles:@[@"Square", @"Portrait", @"Landscape"]];
     
     // Set tags to map to actual sizes
@@ -320,9 +320,9 @@ static NSString *const kAILastAttachedImagePath = @"AILastAttachedImagePath";
     [qualityLabel setBackgroundColor:[NSColor clearColor]];
     [drawerContent addSubview:qualityLabel];
     
-    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 60, currentY - 3, 140, 26)];
+    self.qualityPopUpButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(margin + 85, currentY - 3, 115, 26)];
     [self.qualityPopUpButton addItemsWithTitles:@[@"Low", @"Medium", @"High"]];
-    [self.qualityPopUpButton setToolTip:@"High quality looks best, but costs more"];
+    [self.qualityPopUpButton setToolTip:@"High quality looks best, but costs more API credits"];
     
     // Load saved quality or default to High
     NSString *savedQuality = [[NSUserDefaults standardUserDefaults] stringForKey:kAILastQuality];
