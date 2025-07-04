@@ -93,7 +93,7 @@ run: $(TARGET)
 	@echo "Running Auto Image..."
 	open $(TARGET)
 
-install: $(TARGET)
+install: all
 	@echo "Installing Auto Image to /Applications..."
 	@rm -rf /Applications/$(TARGET)
 	@cp -R $(TARGET) /Applications/
