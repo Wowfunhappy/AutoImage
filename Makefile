@@ -93,4 +93,10 @@ run: $(TARGET)
 	@echo "Running Auto Image..."
 	open $(TARGET)
 
-.PHONY: all clean run
+install: $(TARGET)
+	@echo "Installing Auto Image to /Applications..."
+	@rm -rf /Applications/$(TARGET)
+	@cp -R $(TARGET) /Applications/
+	@echo "Installation complete!"
+
+.PHONY: all clean run install
